@@ -43,6 +43,13 @@
 - Registered contract 2LymHNVi4qF7emJLcqgcVoNiS8MycsaRFVc5iM2cNaFL at block 609497: documentSchemas = {entry: encrypted/iv/version/updatedAt, meta: version/salt/rotation/updatedAt}, ownerId index, history off.
 - Verified both on-chain via SDK fetch. Ids saved to config/testnet.json (identity.id + contract.id).
 
+## MILESTONE 4 — DONE
+- crypto/crypto.mjs: derivation chain masterKey=Argon2id(password,salt) -> entryKey=HKDF(masterKey,"pyxpass-entry:<id>") -> encKey=HKDF(entryKey,"pyxpass-enc:<rotation>:<id>") -> AES-256-GCM.
+- @node-rs/argon2 2.2.1 returns only the PHC-encoded string (no raw option) — decode the base64 hash segment for the 32-byte key.
+- Argon2id params: 64 MiB (m=65536), t=2, p=2, output 32 bytes. GCM: 12-byte IV, 16-byte tag appended to ciphertext.
+- Salt (16B) lives in the meta doc; rotation is the meta counter that re-derives every encKey (forces re-encryption).
+- crypto/crypto.test.mjs: 6 tests (round-trip, wrong-password fails, IV uniqueness, rotation changes encKey, raw primitives, salt/iv randomness). npm test 6/6 pass. Commit ba6247d3.
+
 ## Protocol
 - After every milestone: update TASKS.md (mark done), write 5-line summary here, git commit + push.
 - Blocked >15 min: write options + recommended default here, pick default, continue.

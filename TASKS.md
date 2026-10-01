@@ -26,10 +26,10 @@ Milestones must be completed in order. ACCEPT criteria must be verified before m
 - Identity: 5dNzK6FTWkBXyvwRvG2awxcbi3LmJaHCyGiyas7MXJtf (bal ~14.9B)
 - Contract: 2LymHNVi4qF7emJLcqgcVoNiS8MycsaRFVc5iM2cNaFL (block 609497)
 
-## MILESTONE 4 — Crypto module (standalone, fully unit-tested)
-- [ ] Implement KDF (Argon2id) + HKDF-SHA256 + AES-256-GCM per spec
-- [ ] Unit tests: encrypt->decrypt round-trip, wrong-password fails, IV uniqueness, rotation changes encKey
-- ACCEPT: all crypto unit tests pass
+## MILESTONE 4 — Crypto module (standalone, fully unit-tested) ✅
+- [x] Implement KDF (Argon2id) + HKDF-SHA256 + AES-256-GCM per spec
+- [x] Unit tests: encrypt->decrypt round-trip, wrong-password fails, IV uniqueness, rotation changes encKey
+- ACCEPT: all crypto unit tests pass — DONE (commit ba6247d3, `npm test` 6/6 green)
 
 ## MILESTONE 5 — Sidecar document CRUD
 - [ ] meta doc read/write

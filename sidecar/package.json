@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "test": "node --test crypto/crypto.test.mjs",
+    "test:m5": "node vault.test.mjs",
     "register:identity": "node register-identity.mjs",
     "register:contract": "node register-contract.mjs",
     "topup:identity": "node topup-identity.mjs"
@@ -14,7 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@dashevo/evo-sdk": "^4.1.1",
+    "@dashevo/evo-sdk": "^4.2.0-beta.7",
     "@node-rs/argon2": "^2.2.1",
     "dotenv": "^18.0.5"
   },

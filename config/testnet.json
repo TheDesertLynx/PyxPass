@@ -20,5 +20,8 @@
     "maxStateTransitionBytes": 20480,
     "maxFieldValueBytes": 5120,
     "maxDocumentTransitionsPerBatch": 1
+  },
+  "vault": {
+    "metaId": "2p8ZyaDEyd3j3noWuDpwuywzh93jBHWxkGjvpvgC2RrQ"
   }
 }

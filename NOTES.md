@@ -50,6 +50,14 @@
 - Salt (16B) lives in the meta doc; rotation is the meta counter that re-derives every encKey (forces re-encryption).
 - crypto/crypto.test.mjs: 6 tests (round-trip, wrong-password fails, IV uniqueness, rotation changes encKey, raw primitives, salt/iv randomness). npm test 6/6 pass. Commit ba6247d3.
 
+## MILESTONE 5 — DONE
+- vault.mjs = PyxVault class: ensureMeta/loadMeta (meta singleton), createEntry/readEntry/updateEntry/deleteEntry/listEntries (encrypted per-entry docs). entryId IS the on-chain doc id (SDK-generated at construction) so crypto derivation and on-chain identity stay in sync.
+- Meta singleton has no ownerId index and no deterministic id (id commits to the SDK-managed identity nonce), so its doc id is stored in config/testnet.json -> vault.metaId. Salt/version/rotation stay on-chain; only the pointer is local.
+- Create mechanics: construct Document with `properties: {}`, read id, encrypt with that id, THEN assign `doc.properties` (byte arrays as Uint8Array) — assigning the whole object (not mutating keys) is what serializes. Fetched docs do NOT expose entropy.
+- Update/replace mechanics: fetch doc, reassign `properties`, RE-AFFIRM `doc.id`, bump revision (+1). Skipping the id re-affirm makes the platform error "document not found" despite the doc existing. Fetched `get()` may lag a create — retry loop.
+- SDK upgraded 4.1.1 -> 4.2.0-beta.7 (fixes "not an array of bytes" serialization bug). Identity ~14.9B credits covers M5 fees (no top-up needed yet).
+- vault.test.mjs (`npm run test:m5`) ALL PASS: meta init/reuse, create/read round-trip, wrong-password fails, update (replace) persists, list by ownerId, delete, gone-after-delete. Meta on-chain: 2p8ZyaDEyd3j3noWuDpwuywzh93jBHWxkGjvpvgC2RrQ.
+
 ## Protocol
 - After every milestone: update TASKS.md (mark done), write 5-line summary here, git commit + push.
 - Blocked >15 min: write options + recommended default here, pick default, continue.

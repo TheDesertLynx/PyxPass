@@ -31,11 +31,12 @@ Milestones must be completed in order. ACCEPT criteria must be verified before m
 - [x] Unit tests: encrypt->decrypt round-trip, wrong-password fails, IV uniqueness, rotation changes encKey
 - ACCEPT: all crypto unit tests pass — DONE (commit ba6247d3, `npm test` 6/6 green)
 
-## MILESTONE 5 — Sidecar document CRUD
-- [ ] meta doc read/write
-- [ ] entry doc create/replace/delete/fetch via evo-sdk
-- [ ] One transition at a time (batch limit = 1); handle nonces + signing + fee top-up
-- ACCEPT: end-to-end create/fetch/update/delete of an encrypted entry on testnet, verified in explorer
+## MILESTONE 5 — Sidecar document CRUD ✅
+- [x] meta doc read/write
+- [x] entry doc create/replace/delete/fetch via evo-sdk
+- [x] One transition at a time (batch limit = 1); handle nonces + signing + fee top-up
+- ACCEPT: end-to-end create/fetch/update/delete of an encrypted entry on testnet, verified in explorer — DONE (`vault.mjs` + `vault.test.mjs`, `npm run test:m5` ALL PASS)
+- meta doc on-chain: 2p8ZyaDEyd3j3noWuDpwuywzh93jBHWxkGjvpvgC2RrQ (version 1, rotation 0, 16-byte salt)
 
 ## MILESTONE 6 — Sync logic + CLI test harness
 - [ ] Full pull on unlock, per-entry diff push on save, last-writer-wins by $updatedAt, conflict detection

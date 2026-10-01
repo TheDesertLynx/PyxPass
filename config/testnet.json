@@ -1,0 +1,24 @@
+{
+  "network": "testnet",
+  "dapi": {
+    "seed": "TODO: verify against Dash docs (Setup SDK Client tutorial)",
+    "port": 0
+  },
+  "faucet": {
+    "url": "TODO: verify testnet faucet URL"
+  },
+  "contract": {
+    "id": "TODO: filled in at Milestone 3 after registration"
+  },
+  "identity": {
+    "id": "TODO: filled in at Milestone 3 after creation"
+  },
+  "fees": {
+    "dashPerCredit": 100000000000,
+    "permanentStoragePerByte": 27000,
+    "writeProcessingPerByte": 400,
+    "maxStateTransitionBytes": 20480,
+    "maxFieldValueBytes": 5120,
+    "maxDocumentTransitionsPerBatch": 1
+  }
+}

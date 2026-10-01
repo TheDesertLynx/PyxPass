@@ -32,3 +32,12 @@ out/
 # vcpkg
 vcpkg_installed*/
 
+# PyxPass secrets — NEVER commit
+.env
+.env.*
+config/*.local.json
+sidecar/keys/
+*.seed
+*.key
+*.pem
+

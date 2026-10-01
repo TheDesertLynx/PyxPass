@@ -11,11 +11,11 @@ Milestones must be completed in order. ACCEPT criteria must be verified before m
 - [x] Clean commit + push
 - ACCEPT: repo has TASKS.md/NOTES.md, clean commit — DONE (commit e218ab67)
 
-## MILESTONE 2 — Node sidecar scaffold
-- [ ] npm init, install @dashevo/evo-sdk
-- [ ] Create sidecar/ dir with index.js (JSON-RPC server skeleton)
-- [ ] Wire testnet connection per the Dash "Setup SDK Client" tutorial
-- ACCEPT: sidecar starts, connects to testnet DAPI, can fetch an identity
+## MILESTONE 2 — Node sidecar scaffold ✅
+- [x] npm init, install @dashevo/evo-sdk
+- [x] Create sidecar/ dir with index.js (JSON-RPC server skeleton)
+- [x] Wire testnet connection per the Dash "Setup SDK Client" tutorial
+- ACCEPT: sidecar starts, connects to testnet DAPI — DONE (commit d8cd48bc). Fetch-an-identity awaits M3 (no identity exists yet).
 
 ## MILESTONE 3 — Testnet identity + contract
 - [ ] Create a testnet identity (fund from testnet faucet)

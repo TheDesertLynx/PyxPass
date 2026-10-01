@@ -21,6 +21,13 @@
 - Git identity: used inline `-c user.name/user.email` (TheDesertLynx) — no global git config touched.
 - Set up `gh auth setup-git` so HTTPS pushes authenticate via the existing gh login. Origin stays HTTPS.
 
+## MILESTONE 2 — DONE
+- Read the official Dash docs: Setup SDK Client, Submit documents, Retrieve documents tutorials. Verified evo-sdk 4.1.1 API: EvoSDK.testnetTrusted(), IdentityKeyManager.getAuth() -> {identity, identityKey, signer}, sdk.documents.create/query.
+- sidecar/ scaffolded: package.json (evo-sdk 4.1.1 + dotenv), setupDashClient-core.mjs + setupDashClient.mjs extracted verbatim from the tutorial, index.js JSON-RPC server (127.0.0.1:8765, POST /rpc).
+- .env holds testnet mnemonic (gitignored). dotenv was required — tutorial treats it as optional, sidecar needs it.
+- Server verified: ping -> connected:true; status -> primaryAddress tdash1kr26msyth8l7cval4mma250qnl8zr0uyfgm2usr4. identityId null (no identity yet -> M3).
+- Stub methods in place for unlock/lock/getMeta/createEntry/updateEntry/deleteEntry/listEntries/rotateKeys (return "not implemented" until M4/M5).
+
 ## Protocol
 - After every milestone: update TASKS.md (mark done), write 5-line summary here, git commit + push.
 - Blocked >15 min: write options + recommended default here, pick default, continue.

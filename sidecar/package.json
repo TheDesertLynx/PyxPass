@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "node --test",
+    "test": "node --test crypto/crypto.test.mjs",
     "register:identity": "node register-identity.mjs",
     "register:contract": "node register-contract.mjs",
     "topup:identity": "node topup-identity.mjs"
@@ -15,6 +15,7 @@
   "license": "ISC",
   "dependencies": {
     "@dashevo/evo-sdk": "^4.1.1",
+    "@node-rs/argon2": "^2.2.1",
     "dotenv": "^18.0.5"
   },
   "type": "module"

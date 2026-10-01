@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "register:identity": "node register-identity.mjs",
+    "register:contract": "node register-contract.mjs"
   },
   "keywords": [],
   "author": "",

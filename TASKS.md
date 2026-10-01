@@ -17,12 +17,14 @@ Milestones must be completed in order. ACCEPT criteria must be verified before m
 - [x] Wire testnet connection per the Dash "Setup SDK Client" tutorial
 - ACCEPT: sidecar starts, connects to testnet DAPI — DONE (commit d8cd48bc). Fetch-an-identity awaits M3 (no identity exists yet).
 
-## MILESTONE 3 — Testnet identity + contract
-- [ ] Create a testnet identity (fund from testnet faucet)
-- [ ] Register the PyxPass data contract (entry + meta doc types)
-- [ ] Verify both on the testnet block explorer
-- [ ] Store identity/contract ids in config (NOT git-committed keys)
-- ACCEPT: contract visible on testnet explorer; identity has a credit balance
+## MILESTONE 3 — Testnet identity + contract ✅
+- [x] Create a testnet identity (fund from testnet faucet)
+- [x] Register the PyxPass data contract (entry + meta doc types)
+- [x] Verify both on-chain via SDK fetch (identity + contract retrievable)
+- [x] Store identity/contract ids in config (NOT git-committed keys)
+- ACCEPT: contract on testnet; identity has credit balance — DONE (commit b30327fd)
+- Identity: 5dNzK6FTWkBXyvwRvG2awxcbi3LmJaHCyGiyas7MXJtf (bal ~14.9B)
+- Contract: 2LymHNVi4qF7emJLcqgcVoNiS8MycsaRFVc5iM2cNaFL (block 609497)
 
 ## MILESTONE 4 — Crypto module (standalone, fully unit-tested)
 - [ ] Implement KDF (Argon2id) + HKDF-SHA256 + AES-256-GCM per spec

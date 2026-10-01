@@ -36,6 +36,13 @@
 - Funding URL for Joël: https://bridge.thepasta.org/?address=tdash1kr26msyth8l7cval4mma250qnl8zr0uyfgm2usr4
 - After funding: run `npm run register:identity` -> set config/testnet.json identity.id, then `npm run register:contract` -> set contract.id.
 
+## MILESTONE 3 — DONE
+- Bridge funding landed (~1000 testnet DASH -> 99,983,769,880 credits on platform address).
+- Registered identity 5dNzK6FTWkBXyvwRvG2awxcbi3LmJaHCyGiyas7MXJtf (funded 5M at create, then topped up +30B via sdk.addresses.topUpIdentity).
+- Contract registration requires ~15B credits (identity had 5M -> top-up needed). topup-identity.mjs added (reusable).
+- Registered contract 2LymHNVi4qF7emJLcqgcVoNiS8MycsaRFVc5iM2cNaFL at block 609497: documentSchemas = {entry: encrypted/iv/version/updatedAt, meta: version/salt/rotation/updatedAt}, ownerId index, history off.
+- Verified both on-chain via SDK fetch. Ids saved to config/testnet.json (identity.id + contract.id).
+
 ## Protocol
 - After every milestone: update TASKS.md (mark done), write 5-line summary here, git commit + push.
 - Blocked >15 min: write options + recommended default here, pick default, continue.

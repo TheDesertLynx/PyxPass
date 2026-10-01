@@ -14,6 +14,13 @@
   "Retrieve documents" tutorials — the sketch may differ.
 - Contract id / identity id / faucet status: TBD (Milestone 3).
 
+## MILESTONE 1 — DONE
+- Created TASKS.md + NOTES.md in repo; set up config/testnet.json with fee/network constants (DAPI + faucet + contract/identity ids as TODO placeholders).
+- Added PyxPass secrets block to .gitignore (env, keys, seeds, *.pem, sidecar/keys/).
+- Committed e218ab67 and pushed to origin/develop. Branch now tracks origin/develop.
+- Git identity: used inline `-c user.name/user.email` (TheDesertLynx) — no global git config touched.
+- Set up `gh auth setup-git` so HTTPS pushes authenticate via the existing gh login. Origin stays HTTPS.
+
 ## Protocol
 - After every milestone: update TASKS.md (mark done), write 5-line summary here, git commit + push.
 - Blocked >15 min: write options + recommended default here, pick default, continue.

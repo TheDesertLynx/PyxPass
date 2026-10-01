@@ -5,11 +5,11 @@ documents on Dash Platform. Platform is the SOLE source of truth — no local `.
 
 Milestones must be completed in order. ACCEPT criteria must be verified before moving on.
 
-## MILESTONE 1 — Repo hygiene
+## MILESTONE 1 — Repo hygiene ✅
 - [x] Create this TASKS.md and NOTES.md in the repo
 - [x] Set up testnet config constants in one file (dapi endpoints, faucet, contract id placeholder)
-- [ ] Clean commit + push
-- ACCEPT: repo has TASKS.md/NOTES.md, clean commit
+- [x] Clean commit + push
+- ACCEPT: repo has TASKS.md/NOTES.md, clean commit — DONE (commit e218ab67)
 
 ## MILESTONE 2 — Node sidecar scaffold
 - [ ] npm init, install @dashevo/evo-sdk

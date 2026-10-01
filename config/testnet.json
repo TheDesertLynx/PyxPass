@@ -8,10 +8,10 @@
     "url": "TODO: verify testnet faucet URL"
   },
   "contract": {
-    "id": "TODO: filled in at Milestone 3 after registration"
+    "id": "2LymHNVi4qF7emJLcqgcVoNiS8MycsaRFVc5iM2cNaFL"
   },
   "identity": {
-    "id": "TODO: filled in at Milestone 3 after creation"
+    "id": "5dNzK6FTWkBXyvwRvG2awxcbi3LmJaHCyGiyas7MXJtf"
   },
   "fees": {
     "dashPerCredit": 100000000000,

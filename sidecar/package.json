@@ -7,7 +7,8 @@
     "start": "node index.js",
     "test": "node --test",
     "register:identity": "node register-identity.mjs",
-    "register:contract": "node register-contract.mjs"
+    "register:contract": "node register-contract.mjs",
+    "topup:identity": "node topup-identity.mjs"
   },
   "keywords": [],
   "author": "",

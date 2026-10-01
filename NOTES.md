@@ -28,6 +28,14 @@
 - Server verified: ping -> connected:true; status -> primaryAddress tdash1kr26msyth8l7cval4mma250qnl8zr0uyfgm2usr4. identityId null (no identity yet -> M3).
 - Stub methods in place for unlock/lock/getMeta/createEntry/updateEntry/deleteEntry/listEntries/rotateKeys (return "not implemented" until M4/M5).
 
+## MILESTONE 3 — IN PROGRESS (blocked on faucet)
+- M3 scripts built + pushed (e9499c4b): register-identity.mjs, register-contract.mjs, contract.schema.mjs (entry + meta doc types, byte-array ciphertext fields, ownerId index, history disabled).
+- Verified SDK has createIdentity, identities.nonce, contracts.publish.
+- BLOCKED: platform address has 0 balance. Funding requires the testnet Core->Platform bridge, which is browser-interactive (bridge.thepasta.org). This box is headless with no Chromium installed (browser-use skill: do not auto-install).
+- Platform address: tdash1kr26msyth8l7cval4mma250qnl8zr0uyfgm2usr4
+- Funding URL for Joël: https://bridge.thepasta.org/?address=tdash1kr26msyth8l7cval4mma250qnl8zr0uyfgm2usr4
+- After funding: run `npm run register:identity` -> set config/testnet.json identity.id, then `npm run register:contract` -> set contract.id.
+
 ## Protocol
 - After every milestone: update TASKS.md (mark done), write 5-line summary here, git commit + push.
 - Blocked >15 min: write options + recommended default here, pick default, continue.

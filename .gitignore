@@ -41,3 +41,6 @@ sidecar/keys/
 *.key
 *.pem
 
+# Node
+node_modules/
+

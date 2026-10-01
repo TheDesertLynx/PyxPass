@@ -58,6 +58,14 @@
 - SDK upgraded 4.1.1 -> 4.2.0-beta.7 (fixes "not an array of bytes" serialization bug). Identity ~14.9B credits covers M5 fees (no top-up needed yet).
 - vault.test.mjs (`npm run test:m5`) ALL PASS: meta init/reuse, create/read round-trip, wrong-password fails, update (replace) persists, list by ownerId, delete, gone-after-delete. Meta on-chain: 2p8ZyaDEyd3j3noWuDpwuywzh93jBHWxkGjvpvgC2RrQ.
 
+## MILESTONE 6 — DONE
+- sync.mjs = SyncSession: unlock does a FULL pull into an in-memory working copy; editLocal marks an entry dirty; save() pushes ONLY dirty entries (per-entry diff). Conflict LWW by on-chain $updatedAt.
+- KEY INSIGHT: on-chain updatedAt must be the LOGICAL edit time, not the push time — vault.createEntry/updateEntry now take an explicit updatedAt param; SyncSession writes local.localUpdatedAt on push. Otherwise LWW compares push-times and every second push looks like a conflict.
+- LWW rules: chain.updatedAt > local edit -> remote wins (pull remote in, drop local edit); local >= chain -> local wins (push). Doc gone on-chain -> remote-delete wins.
+- pyxpass-cli.mjs: standalone CLI (no KeePassXC). Interactive REPL (unlock/list/show/create/edit/save/delete/pull/lock) + one-shot subcommands. Each invocation = a fresh SyncSession = a separate logical device.
+- index.js wired to real identity (connect requireIdentity:true) + SyncSession; RPC createEntry/updateEntry serialize JSON plaintext to a Buffer (encBuf). Verified full unlock/create/list/update/delete/lock over JSON-RPC.
+- sync.test.mjs (`npm run test:m6`) ALL PASS: two SyncSession instances (devices A/B) share one on-chain vault; B sees A's entry; B's newer edit wins edit-vs-edit; a stale edit vs remote delete resolves remote-deleted.
+
 ## Protocol
 - After every milestone: update TASKS.md (mark done), write 5-line summary here, git commit + push.
 - Blocked >15 min: write options + recommended default here, pick default, continue.

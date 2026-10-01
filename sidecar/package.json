@@ -7,6 +7,7 @@
     "start": "node index.js",
     "test": "node --test crypto/crypto.test.mjs",
     "test:m5": "node vault.test.mjs",
+    "test:m6": "node sync.test.mjs",
     "register:identity": "node register-identity.mjs",
     "register:contract": "node register-contract.mjs",
     "topup:identity": "node topup-identity.mjs"

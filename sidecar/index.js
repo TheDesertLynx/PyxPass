@@ -9,7 +9,10 @@
 // and exposes stub methods for the crypto/CRUD milestones (M4, M5).
 //
 import http from 'node:http';
+import { readFile } from 'node:fs/promises';
 import { setupDashClient } from './setupDashClient.mjs';
+import { PyxVault } from './vault.mjs';
+import { SyncSession } from './sync.mjs';
 
 const HOST = process.env.PYXPASS_HOST || '127.0.0.1';
 const PORT = Number(process.env.PYXPASS_PORT || 8765);
@@ -17,17 +20,59 @@ const PORT = Number(process.env.PYXPASS_PORT || 8765);
 let sdk = null;
 let keyManager = null;
 let addressKeyManager = null;
+let config = null;
+let session = null; // SyncSession while unlocked
 
 // ---------------------------------------------------------------------------
 // Connection
 // ---------------------------------------------------------------------------
 
+async function loadConfig() {
+  if (config) return config;
+  try {
+    config = JSON.parse(
+      await readFile(new URL('../config/testnet.json', import.meta.url), 'utf8'),
+    );
+  } catch {
+    config = {};
+  }
+  return config;
+}
+
 async function connect() {
   if (sdk) return;
-  const res = await setupDashClient({ requireIdentity: false });
+  const res = await setupDashClient({ requireIdentity: true });
   sdk = res.sdk;
-  keyManager = res.keyManager; // createForNewIdentity (no on-chain id yet)
+  keyManager = res.keyManager; // resolves the mnemonic's existing identity
   addressKeyManager = res.addressKeyManager;
+}
+
+async function getVault() {
+  await connect();
+  const cfg = await loadConfig();
+  const contractId = cfg.contract?.id;
+  if (!contractId) throw new Error('contract.id missing from config/testnet.json');
+  return new PyxVault({
+    sdk,
+    keyManager,
+    contractId,
+    metaId: cfg.vault?.metaId ?? null,
+  });
+}
+
+async function getSession() {
+  if (!session) {
+    const vault = await getVault();
+    session = new SyncSession({ vault });
+  }
+  return session;
+}
+
+/** Serialize JSON plaintext to the Buffer the crypto layer expects. */
+function encBuf(plaintext) {
+  return Buffer.isBuffer(plaintext)
+    ? plaintext
+    : Buffer.from(JSON.stringify(plaintext));
 }
 
 // ---------------------------------------------------------------------------
@@ -60,30 +105,65 @@ const methods = {
     };
   },
 
-  // ---- stubs for later milestones (M4 crypto, M5 CRUD) ----
-  async unlock() {
-    throw new Error('unlock: not implemented until Milestone 4 (crypto)');
+  /** unlock <password> -> full pull; returns metaId + entry list */
+  async unlock(password) {
+    if (typeof password !== 'string' || !password) {
+      throw new Error('unlock requires a password');
+    }
+    const s = await getSession();
+    const res = await s.unlock(password);
+    return { ok: true, ...res, identityId: keyManager?.identityId || null };
   },
+  /** lock -> clear session state (forget password + entries) */
   async lock() {
-    throw new Error('lock: not implemented until Milestone 4 (crypto)');
+    if (session) session.lock();
+    session = null;
+    return { ok: true };
   },
+  /** getMeta -> meta id + crypto version + rotation (no password needed) */
   async getMeta() {
-    throw new Error('getMeta: not implemented until Milestone 5 (meta doc CRUD)');
+    const cfg = await loadConfig();
+    const v = await getVault();
+    const meta = await v.loadMeta();
+    if (!meta) return { ok: true, exists: false };
+    return { ok: true, exists: true, metaId: v.metaId, ...meta };
   },
-  async createEntry() {
-    throw new Error('createEntry: not implemented until Milestone 5 (entry CRUD)');
-  },
-  async updateEntry() {
-    throw new Error('updateEntry: not implemented until Milestone 5 (entry CRUD)');
-  },
-  async deleteEntry() {
-    throw new Error('deleteEntry: not implemented until Milestone 5 (entry CRUD)');
-  },
+  /** listEntries -> [{ entryId, updatedAt }] from the unlocked session */
   async listEntries() {
-    throw new Error('listEntries: not implemented until Milestone 6 (sync)');
+    const s = await getSession();
+    return { ok: true, entries: s.listEntries(), dirty: s.dirtyCount };
   },
-  async rotateKeys() {
-    throw new Error('rotateKeys: not implemented until Milestone 5 (meta CRUD)');
+  /** createEntry <plaintext> -> entryId */
+  async createEntry(plaintext) {
+    const s = await getSession();
+    const entryId = await s.createEntry(encBuf(plaintext));
+    return { ok: true, entryId };
+  },
+  /** updateEntry <entryId> <plaintext> -> edit in memory + save (LWW diff push) */
+  async updateEntry(entryId, plaintext) {
+    const s = await getSession();
+    s.editLocal(entryId, encBuf(plaintext));
+    const res = await s.save();
+    const mine = res.pushed.includes(entryId);
+    const conflicted = res.conflicts.find((c) => c.entryId === entryId);
+    return { ok: true, entryId, pushed: mine, conflict: !!conflicted, ...res };
+  },
+  /** deleteEntry <entryId> -> push delete */
+  async deleteEntry(entryId) {
+    const s = await getSession();
+    await s.deleteEntry(entryId);
+    return { ok: true, entryId };
+  },
+  /** save -> push all locally-dirty entries (per-entry diff, LWW) */
+  async save() {
+    const s = await getSession();
+    return { ok: true, ...(await s.save()) };
+  },
+  /** pull -> refresh in-memory state from chain */
+  async pull() {
+    const s = await getSession();
+    const entries = await s.pull();
+    return { ok: true, entries };
   },
 };
 

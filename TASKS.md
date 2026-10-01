@@ -38,10 +38,11 @@ Milestones must be completed in order. ACCEPT criteria must be verified before m
 - ACCEPT: end-to-end create/fetch/update/delete of an encrypted entry on testnet, verified in explorer — DONE (`vault.mjs` + `vault.test.mjs`, `npm run test:m5` ALL PASS)
 - meta doc on-chain: 2p8ZyaDEyd3j3noWuDpwuywzh93jBHWxkGjvpvgC2RrQ (version 1, rotation 0, 16-byte salt)
 
-## MILESTONE 6 — Sync logic + CLI test harness
-- [ ] Full pull on unlock, per-entry diff push on save, last-writer-wins by $updatedAt, conflict detection
-- [ ] Standalone CLI test harness (no KeePassXC needed)
-- ACCEPT: CLI can unlock, list, create, edit, delete; second identity/device sees updates; conflicts resolve LWW
+## MILESTONE 6 — Sync logic + CLI test harness ✅
+- [x] Full pull on unlock, per-entry diff push on save, last-writer-wins by $updatedAt, conflict detection
+- [x] Standalone CLI test harness (no KeePassXC needed)
+- ACCEPT: CLI can unlock, list, create, edit, delete; second identity/device sees updates; conflicts resolve LWW — DONE (`sync.mjs`, `pyxpass-cli.mjs`, `sync.test.mjs`, RPC wired in `index.js`)
+- `npm run test:m6` ALL PASS: second device sees updates; edit-vs-edit resolves LWW; edit-vs-delete remote-delete wins
 
 ## MILESTONE 7 — KeePassXC fork wiring
 - [ ] Add "Open from Platform" and "Save to Platform" actions

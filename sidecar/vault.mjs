@@ -101,7 +101,7 @@ export class PyxVault {
   }
 
   /** Create an entry; returns the on-chain entryId (doc id). */
-  async createEntry(password, plaintext) {
+  async createEntry(password, plaintext, updatedAt = Date.now()) {
     const meta = this._meta ?? (await this.loadMeta());
     if (!meta) throw new Error('vault meta not initialized — run ensureMeta first');
     const { identity, identityKey, signer } = await this._getAuth();
@@ -119,7 +119,7 @@ export class PyxVault {
       encrypted: new Uint8Array(ciphertext),
       iv: new Uint8Array(iv),
       version: meta.version,
-      updatedAt: Date.now(),
+      updatedAt,
     };
     await this.sdk.documents.create({ document: entry, identityKey, signer });
     return entryId;
@@ -137,7 +137,7 @@ export class PyxVault {
   }
 
   /** Re-encrypt and replace an existing entry. */
-  async updateEntry(password, entryId, plaintext) {
+  async updateEntry(password, entryId, plaintext, updatedAt = Date.now()) {
     const meta = this._meta ?? (await this.loadMeta());
     if (!meta) throw new Error('vault meta not initialized — run ensureMeta first');
     const { identityKey, signer } = await this._getAuth();
@@ -150,7 +150,7 @@ export class PyxVault {
       encrypted: new Uint8Array(ciphertext),
       iv: new Uint8Array(iv),
       version: meta.version,
-      updatedAt: Date.now(),
+      updatedAt,
     };
     doc.id = entryId; // re-affirm the id after reassigning properties
     doc.revision = (doc.revision ?? 0n) + 1n;
@@ -170,6 +170,11 @@ export class PyxVault {
       identityKey,
       signer,
     });
+  }
+
+  /** Fetch the raw entry doc (no decryption) — used for conflict checks. */
+  async getEntryDoc(entryId) {
+    return this._getRetry('entry', entryId);
   }
 
   /** List all entries (ids + updatedAt) without decrypting. */

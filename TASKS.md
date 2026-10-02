@@ -45,15 +45,16 @@ Milestones must be completed in order. ACCEPT criteria must be verified before m
 - `npm run test:m6` ALL PASS: second device sees updates; edit-vs-edit resolves LWW; edit-vs-delete remote-delete wins
 
 ## MILESTONE 7 — KeePassXC fork wiring
-- [ ] Add "Open from Platform" and "Save to Platform" actions
-- [ ] On unlock, call sidecar.unlock, hydrate the in-memory Database
-- [ ] Hook entry CRUD to sidecar methods
-- [ ] Do NOT write any .kdbx file; .kdbx import only as optional seed path
+- [ ] M7a: Build toolchain — get the fork compiling (Qt6 + Botan + zlib/minizip + pcsc/libusb) without sudo
+- [ ] M7b: PyxPass sidecar HTTP client (C++): JSON-RPC over HTTP to 127.0.0.1:8765 (unlock/list/create/update/delete/save/lock)
+- [ ] M7c: Storage integration — hydrate in-memory Database from sidecar.unlock; persist edits via sidecar.save
+- [ ] M7d: GUI actions "Open from Platform" / "Save to Platform"; hook entry CRUD to sidecar methods
+- [ ] M7e: No .kdbx writes (.kdbx import only as optional seed path); verify ACCEPT
 - ACCEPT: fork opens a vault from Platform, edits entries, and changes persist
 
 ## MILESTONE 8 — Multi-machine test
-- [ ] Two sidecar instances (different testnet identities or same identity) edit entries
-- [ ] Verify last-writer-wins and no data loss
+- [ ] M8a: Two sidecar instances / sessions (same identity = two devices) edit entries concurrently
+- [ ] M8b: Verify last-writer-wins and no data loss
 - ACCEPT: multi-machine sync works without data loss
 
 ## GUARDRAILS (hard rules — never violate)
@@ -64,3 +65,30 @@ Milestones must be completed in order. ACCEPT criteria must be verified before m
 - Never embed the Dash SDK in the C++ fork. Sidecar only.
 - No local KDBX writes. Platform is the only persistence.
 - Every entry operation is its own signed state transition (batch limit = 1).
+
+## MILESTONE 9 — DashConnect protocol module
+- [ ] M9a: Parse dash-key: URI (0x01 ‖ appEphemeralPub(33) ‖ contractId(32) ‖ labelLen ‖ label), plain base58, ?n=t&v=1
+- [ ] M9b: ECDH shared secret + AES-GCM login-key envelope decryption; loginKey = HKDF(chainKey, identityId, "dash:login-key:v1" ‖ contractId)
+- [ ] M9c: loginKeyResponse publish/poll to yappr key-exchange contract 7UaqHGBJBbRLJ4fUWS45cnud8PPUugJWoGTt1SKwHJ2P
+- [ ] M9d: First-login registration (dash-st: URI): unsigned tagless IdentityUpdate adding auth key (ECDSA_HASH160, AUTHENTICATION/HIGH) + enc key (ECDSA_SECP256K1, ENCRYPTION/MEDIUM)
+- ACCEPT: request byte-identical to DashConnectUriTest.kt SERIALIZED_REQUEST_HEX; key derivation matches KeyExchangeCryptoTest.kt vectors
+
+## MILESTONE 10 — Sidecar DashConnect JSON-RPC + KeePassXC UI
+- [ ] M10a: sidecar dashconnectInit/dashconnectPoll/dashconnectComplete JSON-RPC methods
+- [ ] M10b: KeePassXC QR/deep-link UI for the dash-key: URI (login via DashConnect option)
+- ACCEPT: end-to-end DashConnect login on testnet (scripted responder e2e/wallet-responder.mjs or DashPay wallet)
+
+## MILESTONE 11 — Security hardening
+- [ ] M11a: Confirmation mitigations (full identityId + DPNS name + reg time; warn new <1d / no DPNS; confirm username + start/end of identityId)
+- [ ] M11b: RevokedWalletKey refusal — never re-accept a disabled login key
+- [ ] M11c: Buffer zeroing after use (ephemeral keys, login keys, derived keys, envelope AES key, decoded privkey bytes)
+- [ ] M11d: 5-min request expiry + countdown; QR kept private; deep-link hijack note
+- ACCEPT: security review checklist from wallet-login.md fully implemented
+
+## GUARDRAILS (extended — DashConnect)
+- DashConnect = ALTERNATIVE entry point; master-password unlock stays PRIMARY.
+- TESTNET ONLY — mainnet DashConnect disabled in wallets.
+- NEVER accept CRITICAL/MASTER key for login; require AUTHENTICATION/HIGH.
+- Verify granted key: on responder identity, not disabled/expired, has budget, private key controlled.
+- login key is proof of identity ownership only — does NOT derive vault encryption keys (master password + Argon2 + HKDF unchanged).
+- documentsKeepHistory stays false. Never store plaintext. Never commit keys/seeds.

@@ -71,3 +71,18 @@
 - Blocked >15 min: write options + recommended default here, pick default, continue.
 - If context lost: read this file + TASKS.md to resume.
 - Verify each milestone's ACCEPT criteria before moving on.
+
+## MILESTONE 7 — IN PROGRESS (blocked on DAPI instability)
+- M7a DONE: full fork build (core + GUI + cli + proxy) compiles with 0 failures. Deps in ~/deps (botan/minizip/pcsc/libusb/GL/qrencode/readline/xkbcommon/keyutils), Qt6 6.12.0 via aqtinstall. CLI runs (keepassxc-cli 2.8.0-snapshot).
+- M7b/c/d AUTHORED + compiled: src/pyxpass/{PyxPassClient, PyxPassBridge, PyxPassHeadlessTest}; GUI "Open/Save to Platform" wired in DatabaseTabWidget + MainWindow File menu. CMakeLists: pyxpass into core_SOURCES, Qt6::Network, target pyxpass_headless_test.
+- BLOCKER: headless test against live sidecar fails with transient testnet DAPI errors ("fetch failed" ↔ "invalid quorum: Quorum not found in cache"). Public testnetTrusted() DAPI seeds are unstable right now. Not a code bug — M4/M5/M6/getEntry round-trip all passed earlier against the same setup.
+- Options: (a) wait/retry for DAPI to stabilize; (b) override DAPI seed in evo-sdk config; (c) run M7 verification later and proceed to network-independent M9 now.
+- RECOMMENDED (chosen): (c) — log blocker, proceed to M9 (DashConnect protocol module, ACCEPT = unit tests matching wallet fixtures, no live network needed). Revisit M7 verification when DAPI stabilizes.
+
+## MILESTONE 9/10/11 — DashConnect (plan, per Joël)
+- M9 DashConnect protocol module (network-independent): dash-key:/dash-st: URI parse, ECDH, AES-GCM login-key decryption, loginKeyResponse publish/poll, first-login registration, login key = HKDF(chainKey, identityId, "dash:login-key:v1" || contractId). ACCEPT: request byte-identical to DashConnectUriTest.kt fixture; key derivation matches KeyExchangeCryptoTest.kt.
+- M10 Sidecar DashConnect JSON-RPC (dashconnectInit/Poll/Complete) + KeePassXC QR/deep-link UI. ACCEPT: e2e testnet login via scripted responder (e2e/wallet-responder.mjs) or DashPay wallet.
+- M11 Security hardening: confirmation mitigations (show full identityId + DPNS + reg time, warn new/<1d or no DPNS, require confirm username + start/end of id), RevokedWalletKey refusal, buffer zeroing (Buffer, not JS strings), 5-min request expiry + countdown, QR kept private.
+- Security rules: NEVER accept CRITICAL/MASTER key for login (require AUTHENTICATION/HIGH); verify granted key on responder identity (not disabled/expired, has budget, private key controlled); response does NOT prove who answered → implement mitigations.
+- DashConnect = ALTERNATIVE entry point. Primary path stays unlock(masterPassword). dashconnectComplete marks session "DashConnect-authenticated" but does NOT unlock vault; UI still prompts master password, then normal unlock().
+- Contract: yappr key-exchange 7UaqHGBJBbRLJ4fUWS45cnud8PPUugJWoGTt1SKwHJ2P. TESTNET ONLY. documentsKeepHistory false. Never store plaintext / commit keys.

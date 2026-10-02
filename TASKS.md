@@ -75,8 +75,8 @@ Milestones must be completed in order. ACCEPT criteria must be verified before m
 
 ## MILESTONE 10 — Sidecar DashConnect JSON-RPC + KeePassXC UI
 - [x] M10a: sidecar dashconnectInit/dashconnectPoll/dashconnectComplete JSON-RPC methods (commit 57e56e81)
-- [ ] M10b: KeePassXC QR/deep-link UI for the dash-key: URI (login via DashConnect option)
-- ACCEPT: end-to-end DashConnect login on testnet (scripted responder e2e/wallet-responder.mjs or DashPay wallet) ✅ (M10a verified live 2026-10-02)
+- [x] M10b: KeePassXC QR/deep-link UI for the dash-key: URI (login via DashConnect option) (commit 9e389352)
+- ACCEPT ✅: end-to-end DashConnect login on testnet (C++ client + live sidecar: init -> poll ready -> complete, ALL PASS 2026-10-02)
 
 ## MILESTONE 11 — Security hardening
 - [ ] M11a: Confirmation mitigations (full identityId + DPNS name + reg time; warn new <1d / no DPNS; confirm username + start/end of identityId)

@@ -45,12 +45,12 @@ Milestones must be completed in order. ACCEPT criteria must be verified before m
 - `npm run test:m6` ALL PASS: second device sees updates; edit-vs-edit resolves LWW; edit-vs-delete remote-delete wins
 
 ## MILESTONE 7 — KeePassXC fork wiring
-- [ ] M7a: Build toolchain — get the fork compiling (Qt6 + Botan + zlib/minizip + pcsc/libusb) without sudo
-- [ ] M7b: PyxPass sidecar HTTP client (C++): JSON-RPC over HTTP to 127.0.0.1:8765 (unlock/list/create/update/delete/save/lock)
-- [ ] M7c: Storage integration — hydrate in-memory Database from sidecar.unlock; persist edits via sidecar.save
-- [ ] M7d: GUI actions "Open from Platform" / "Save to Platform"; hook entry CRUD to sidecar methods
-- [ ] M7e: No .kdbx writes (.kdbx import only as optional seed path); verify ACCEPT
-- ACCEPT: fork opens a vault from Platform, edits entries, and changes persist
+- [x] M7a: Build toolchain — get the fork compiling (Qt6 + Botan + zlib/minizip + pcsc/libusb) without sudo
+- [x] M7b: PyxPass sidecar HTTP client (C++): JSON-RPC over HTTP to 127.0.0.1:8765 (unlock/list/create/update/delete/save/lock)
+- [x] M7c: Storage integration — hydrate in-memory Database from sidecar.unlock; persist edits via sidecar.save
+- [x] M7d: GUI actions "Open from Platform" / "Save to Platform"; hook entry CRUD to sidecar methods
+- [x] M7e: No .kdbx writes (.kdbx import only as optional seed path); verify ACCEPT (commit 87152607)
+- ACCEPT ✅: fork opens a vault from Platform, edits entries, and changes persist (pyxpass_headless_test exits 0 = ALL PASS, live sidecar)
 
 ## MILESTONE 8 — Multi-machine test
 - [ ] M8a: Two sidecar instances / sessions (same identity = two devices) edit entries concurrently

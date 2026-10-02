@@ -75,9 +75,8 @@
 ## MILESTONE 7 — IN PROGRESS (blocked on DAPI instability)
 - M7a DONE: full fork build (core + GUI + cli + proxy) compiles with 0 failures. Deps in ~/deps (botan/minizip/pcsc/libusb/GL/qrencode/readline/xkbcommon/keyutils), Qt6 6.12.0 via aqtinstall. CLI runs (keepassxc-cli 2.8.0-snapshot).
 - M7b/c/d AUTHORED + compiled: src/pyxpass/{PyxPassClient, PyxPassBridge, PyxPassHeadlessTest}; GUI "Open/Save to Platform" wired in DatabaseTabWidget + MainWindow File menu. CMakeLists: pyxpass into core_SOURCES, Qt6::Network, target pyxpass_headless_test.
-- BLOCKER: headless test against live sidecar fails with transient testnet DAPI errors ("fetch failed" ↔ "invalid quorum: Quorum not found in cache"). Public testnetTrusted() DAPI seeds are unstable right now. Not a code bug — M4/M5/M6/getEntry round-trip all passed earlier against the same setup.
-- Options: (a) wait/retry for DAPI to stabilize; (b) override DAPI seed in evo-sdk config; (c) run M7 verification later and proceed to network-independent M9 now.
-- RECOMMENDED (chosen): (c) — log blocker, proceed to M9 (DashConnect protocol module, ACCEPT = unit tests matching wallet fixtures, no live network needed). Revisit M7 verification when DAPI stabilizes.
+- M7 VERIFIED ✅ (2026-10-02): incremental build clean ("ninja: no work to do"); pyxpass_headless_test exits 0 (ALL PASS) against live sidecar — open -> hydrate Database -> create -> update -> re-read (title round-trips) -> delete -> lock. Vault password on the self identity = `pyxpass-getentry-test` (created during M4 getEntry round-trip; m5/m6 passwords belong to isolated unit-test vaults). Commit 87152607.
+- Note: headless-test stdout is buffered through QTextStream and not flushed on exit — exit code 0 is the reliable pass signal, not the printed lines.
 
 ## MILESTONE 9/10/11 — DashConnect (plan, per Joël)
 - M9 DashConnect protocol module (network-independent): dash-key:/dash-st: URI parse, ECDH, AES-GCM login-key decryption, loginKeyResponse publish/poll, first-login registration, login key = HKDF(chainKey, identityId, "dash:login-key:v1" || contractId). ACCEPT: request byte-identical to DashConnectUriTest.kt fixture; key derivation matches KeyExchangeCryptoTest.kt.

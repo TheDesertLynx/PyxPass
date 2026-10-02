@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="PyxPass-removebg-preview.png" width="140"/>
+</p>
+
 # PyxPass
 
 PyxPass is a fork of KeePassXC that reimagines password management for the

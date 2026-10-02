@@ -93,7 +93,9 @@
 - chainKey for login-key derivation = identity auth-chain key index 0 (master key, keyId 0); wifToPrivateKeyBytes needs evo-sdk PrivateKey injected at startup.
 - Pushed to origin/develop. Next: M10a sidecar dashconnectInit/Poll/Complete JSON-RPC.
 
-## MILESTONE 10 — IN PROGRESS
-- M10a: sidecar dashconnectInit/dashconnectPoll/dashconnectComplete JSON-RPC methods.
+## MILESTONE 10 — M10a DONE (2026-10-02, commit 57e56e81), M10b IN PROGRESS
+- M10a ✅ DONE: sidecar dashconnectInit/dashconnectPoll/dashconnectComplete JSON-RPC methods (sidecar/index.js) + app-side flow (dashconnect/app.mjs). Full e2e verified on live testnet: init -> scripted responder (e2e/wallet-responder.mjs) -> poll (ready) -> complete returns derived auth/enc keys; derived keys byte-match the on-chain registered keys (keyId5 auth hash160, keyId6 enc pub).
+- Key fixes this run: (1) SDK stores byteArray doc fields as BASE64 in where-queries -> query with base64; (2) doc byteArray props come back as Uint8Array, NOT hex -> Buffer.from(props.X); ownerId via `doc.ownerId` getter (not getOwnerId()); (3) validateKeyRegistration used WRONG enum values -> evo-sdk: ECDSA_HASH160=2, ECDSA_SECP256K1=0, HIGH=2, MEDIUM=3; (4) response doc is unique per ($ownerId, contractId) -> replace via byOwnerAndContract index; (5) key registration is idempotent (tolerate "already exists"); (6) responder stores byteArray props as raw bytes.
+- Pushed to origin/develop (57e56e81). 36/36 dashconnect tests pass.
 - M10b: KeePassXC QR/deep-link UI for the dash-key: URI (login via DashConnect option).
 - ACCEPT: e2e testnet login via scripted responder (e2e/wallet-responder.mjs) or DashPay wallet.

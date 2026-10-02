@@ -140,6 +140,7 @@ set(gui_SOURCES
         gui/SettingsWidget.cpp
         gui/SortFilterHideProxyModel.cpp
         gui/SquareSvgWidget.cpp
+        pyxpass/DashConnectLoginDialog.cpp
         gui/ShortcutSettingsPage.cpp
         gui/TotpSetupDialog.cpp
         gui/TotpDialog.cpp
@@ -419,7 +420,7 @@ endif()
 target_link_libraries(${PROGNAME} keepassxc_gui)
 set_target_properties(${PROGNAME} PROPERTIES ENABLE_EXPORTS ON)
 
-# PyxPass headless integration test (Milestone 7c) — links core + Qt Network
+# Pyxpass headless integration test (Milestone 7c) — links core + Qt Network
 add_executable(pyxpass_headless_test pyxpass/PyxPassHeadlessTest.cpp)
 target_link_libraries(pyxpass_headless_test PRIVATE keepassxc_core Qt6::Core Qt6::Network)
 

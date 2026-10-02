@@ -25,6 +25,7 @@
 
 #include "autotype/AutoType.h"
 #include "core/Merger.h"
+#include "pyxpass/DashConnectLoginDialog.h"
 #include "pyxpass/PyxPassBridge.h"
 #include "pyxpass/PyxPassClient.h"
 #include "core/Tools.h"
@@ -188,6 +189,46 @@ void DatabaseTabWidget::openDatabaseFromPlatform()
     auto* dbWidget = new DatabaseWidget(db, this);
     addDatabaseTab(dbWidget);
     emit databaseOpened(dbWidget);
+}
+
+/**
+ * DashConnect login (Milestone 10b): alternative entry point. Shows the
+ * dash-key: URI as a QR code, waits for a Dash wallet to respond, collects
+ * the master password, then unlocks the vault from the Platform — no .kdbx.
+ */
+void DatabaseTabWidget::loginViaDashConnect()
+{
+    auto* dialog = new PyxPass::DashConnectLoginDialog(QStringLiteral("Login to PyxPass"), this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+
+    QObject::connect(dialog, &PyxPass::DashConnectLoginDialog::ready, this,
+                     [this](const QString& /*identityId*/, const QString& password) {
+        PyxPass::Client client;
+        QString err;
+        QList<PyxPass::EntryMeta> metas;
+        if (!client.ping(&err) || !client.unlock(password, nullptr, &metas)) {
+            emit messageGlobal(tr("PyxPass: %1").arg(client.lastError()), MessageWidget::Error);
+            return;
+        }
+
+        QList<QJsonObject> docs;
+        for (const auto& m : metas) {
+            auto o = client.getEntry(m.entryId, &err);
+            if (o.isEmpty()) {
+                continue;
+            }
+            o.insert(QStringLiteral("pyxpassId"), m.entryId);
+            docs.append(o);
+        }
+
+        auto db = QSharedPointer<Database>::create();
+        PyxPass::hydrateDatabase(db, docs);
+        auto* dbWidget = new DatabaseWidget(db, this);
+        addDatabaseTab(dbWidget);
+        emit databaseOpened(dbWidget);
+    });
+
+    dialog->open();
 }
 
 /**

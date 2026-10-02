@@ -77,6 +77,20 @@ namespace PyxPass
         bool deleteEntry(const QString& entryId, QString* err = nullptr);
         SaveResult save();
 
+        /** DashConnect (M10b): app-side login via a Dash wallet. */
+        bool dashconnectInit(const QString& appContractId,
+                             const QString& label,
+                             QString* connectionId = nullptr,
+                             QString* uri = nullptr,
+                             QString* err = nullptr);
+        bool dashconnectPoll(const QString& connectionId,
+                             QString* status = nullptr,
+                             QString* identityId = nullptr,
+                             QString* err = nullptr);
+        bool dashconnectComplete(const QString& connectionId,
+                                 QString* identityId = nullptr,
+                                 QString* err = nullptr);
+
         QString lastError() const { return m_lastError; }
 
     private:

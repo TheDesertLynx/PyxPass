@@ -221,6 +221,76 @@ namespace PyxPass
         return out;
     }
 
+    bool Client::dashconnectInit(const QString& appContractId,
+                                 const QString& label,
+                                 QString* connectionId,
+                                 QString* uri,
+                                 QString* err)
+    {
+        m_lastError.clear();
+        QJsonArray params;
+        params.append(appContractId);
+        params.append(label);
+        auto res = call(QStringLiteral("dashconnectInit"), params, &m_lastError);
+        if (res.isEmpty()) {
+            if (err) {
+                *err = m_lastError;
+            }
+            return false;
+        }
+        if (connectionId) {
+            *connectionId = res.value(QStringLiteral("connectionId")).toString();
+        }
+        if (uri) {
+            *uri = res.value(QStringLiteral("uri")).toString();
+        }
+        return true;
+    }
+
+    bool Client::dashconnectPoll(const QString& connectionId,
+                                 QString* status,
+                                 QString* identityId,
+                                 QString* err)
+    {
+        m_lastError.clear();
+        QJsonArray params;
+        params.append(connectionId);
+        auto res = call(QStringLiteral("dashconnectPoll"), params, &m_lastError);
+        if (res.isEmpty()) {
+            if (err) {
+                *err = m_lastError;
+            }
+            return false;
+        }
+        if (status) {
+            *status = res.value(QStringLiteral("status")).toString();
+        }
+        if (identityId) {
+            *identityId = res.value(QStringLiteral("identityId")).toString();
+        }
+        return true;
+    }
+
+    bool Client::dashconnectComplete(const QString& connectionId,
+                                     QString* identityId,
+                                     QString* err)
+    {
+        m_lastError.clear();
+        QJsonArray params;
+        params.append(connectionId);
+        auto res = call(QStringLiteral("dashconnectComplete"), params, &m_lastError);
+        if (res.isEmpty() || !res.value(QStringLiteral("ok")).toBool()) {
+            if (err) {
+                *err = m_lastError;
+            }
+            return false;
+        }
+        if (identityId) {
+            *identityId = res.value(QStringLiteral("identityId")).toString();
+        }
+        return true;
+    }
+
     void Client::parseEntryMetas(const QJsonArray& arr, QList<EntryMeta>* out)
     {
         for (const auto& v : arr) {

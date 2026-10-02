@@ -67,6 +67,7 @@ public slots:
     void openDatabase();
     void openDatabaseFromPlatform();
     void saveDatabaseToPlatform();
+    void loginViaDashConnect();
     void mergeDatabase();
     void importFile();
     bool saveDatabase(int index = -1);

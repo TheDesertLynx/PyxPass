@@ -179,6 +179,7 @@ private:
     QPointer<QAction> m_searchWidgetAction;
     QPointer<QAction> m_pyxOpenAction;
     QPointer<QAction> m_pyxSaveAction;
+    QPointer<QAction> m_pyxDashConnectAction;
     QPointer<QMenu> m_entryContextMenu;
     QPointer<QMenu> m_entryNewContextMenu;
     QPointer<QActionGroup> m_lastDatabasesActions;

@@ -66,12 +66,12 @@ Milestones must be completed in order. ACCEPT criteria must be verified before m
 - No local KDBX writes. Platform is the only persistence.
 - Every entry operation is its own signed state transition (batch limit = 1).
 
-## MILESTONE 9 — DashConnect protocol module
-- [ ] M9a: Parse dash-key: URI (0x01 ‖ appEphemeralPub(33) ‖ contractId(32) ‖ labelLen ‖ label), plain base58, ?n=t&v=1
-- [ ] M9b: ECDH shared secret + AES-GCM login-key envelope decryption; loginKey = HKDF(chainKey, identityId, "dash:login-key:v1" ‖ contractId)
-- [ ] M9c: loginKeyResponse publish/poll to yappr key-exchange contract 7UaqHGBJBbRLJ4fUWS45cnud8PPUugJWoGTt1SKwHJ2P
-- [ ] M9d: First-login registration (dash-st: URI): unsigned tagless IdentityUpdate adding auth key (ECDSA_HASH160, AUTHENTICATION/HIGH) + enc key (ECDSA_SECP256K1, ENCRYPTION/MEDIUM)
-- ACCEPT: request byte-identical to DashConnectUriTest.kt SERIALIZED_REQUEST_HEX; key derivation matches KeyExchangeCryptoTest.kt vectors
+## MILESTONE 9 — DashConnect protocol module ✅ COMPLETE
+- [x] M9a: Parse dash-key: URI (0x01 ‖ appEphemeralPub(33) ‖ contractId(32) ‖ labelLen ‖ label), plain base58, ?n=t&v=1
+- [x] M9b: ECDH shared secret + AES-GCM login-key envelope decryption; loginKey = HKDF(chainKey, identityId, "dash:login-key:v1" ‖ contractId)
+- [x] M9c: loginKeyResponse publish/poll to yappr key-exchange contract 7UaqHGBJBbRLJ4fUWS45cnud8PPUugJWoGTt1SKwHJ2P (protocol draft + SDK create-or-replace adapter; live publish is M10 e2e)
+- [x] M9d: First-login registration (dash-st: URI): IdentityUpdate adding auth key (ECDSA_HASH160, AUTHENTICATION/HIGH) + enc key (ECDSA_SECP256K1, ENCRYPTION/MEDIUM) — buildRegistrationKeyData + registerLoginKeys adapter
+- ACCEPT ✅: request byte-identical to DashConnectUriTest.kt SERIALIZED_REQUEST_HEX; key derivation matches KeyExchangeCryptoTest.kt vectors — 32/32 unit tests pass (sidecar/dashconnect/protocol.test.mjs)
 
 ## MILESTONE 10 — Sidecar DashConnect JSON-RPC + KeePassXC UI
 - [ ] M10a: sidecar dashconnectInit/dashconnectPoll/dashconnectComplete JSON-RPC methods

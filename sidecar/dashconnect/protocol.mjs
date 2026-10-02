@@ -47,9 +47,9 @@ export function wifToPrivateKeyBytes(wif) {
     throw new Error('PrivateKey not injected; call injectPrivateKey() first (sidecar)');
   }
   const key = privateKeyClass.fromWIF(wif);
-  const buf = key.toBuffer();
-  if (buf.length !== 32) throw new Error(`Unexpected private key length: ${buf.length}`);
-  return buf;
+  const bytes = key.toBytes();
+  if (bytes.length !== 32) throw new Error(`Unexpected private key length: ${bytes.length}`);
+  return Buffer.from(bytes);
 }
 
 let privateKeyClass = undefined;
@@ -171,19 +171,40 @@ export function validateKeyRegistration({ loginKey, identityIdBytes, identityPub
   const authHash = toHex(hash160(authPub));
   const encPubHex = toHex(encPub);
 
+  // evo-sdk enums: KeyType {ECDSA_SECP256K1:0, ECDSA_HASH160:2},
+  // SecurityLevel {MASTER:0, CRITICAL:1, HIGH:2, MEDIUM:3}.
+  const SEC_LEVEL = { MASTER: 0, CRITICAL: 1, HIGH: 2, MEDIUM: 3 };
+  const normSec = (v) =>
+    typeof v === 'number' ? v : SEC_LEVEL[String(v).toUpperCase()] ?? -1;
+  const normHex = (v) =>
+    v == null
+      ? ''
+      : v instanceof Uint8Array
+        ? Buffer.from(v).toString('hex')
+        : String(v).toLowerCase();
+
+  // Normalize both plain-object fixtures (tests) and real IdentityPublicKey
+  // wasm objects (which expose keyTypeNumber / securityLevelNumber / data).
   const pubKeys = identityPublicKeys.map((k) => ({
-    type: k.type,
-    publicKey: typeof k.publicKey === 'string' ? k.publicKey.toLowerCase() : toHex(k.publicKey),
-    securityLevel: k.securityLevel,
+    type: String(k.type ?? k.keyTypeNumber),
+    publicKey: normHex(k.publicKey ?? k.data),
+    securityLevel: normSec(k.securityLevel ?? k.securityLevelNumber),
   }));
 
+  // ECDSA_HASH160 (type 2) auth keys are stored as hash160 of the pub key;
+  // require HIGH (2) or MASTER (0).
   const authenticationPresent = pubKeys.some(
     (k) =>
-      k.publicKey === authHash && // ECDSA_HASH160 keys are stored by hash160
-      (k.securityLevel === 1 || k.securityLevel === 0), // HIGH or MASTER
+      k.type === '2' && // ECDSA_HASH160
+      k.publicKey === authHash &&
+      (k.securityLevel === 2 || k.securityLevel === 0),
   );
+  // ECDSA_SECP256K1 (type 0) encryption key, MEDIUM (3) or stronger.
   const encryptionPresent = pubKeys.some(
-    (k) => k.publicKey === encPubHex && k.type === 4, // ECDSA_SECP256K1 (DIP-9 type 4)
+    (k) =>
+      k.type === '0' && // ECDSA_SECP256K1
+      k.publicKey === encPubHex &&
+      (k.securityLevel === 3 || k.securityLevel === 2 || k.securityLevel === 0),
   );
 
   return {
@@ -264,15 +285,29 @@ export async function publishLoginKeyResponse({
 export async function findLoginKeyResponseDocumentId(sdk, identityIdBase58, appContractIdBase58) {
   const appContractIdBytes = base58Decode(appContractIdBase58);
   const clause = loginKeyResponseWhereClause(identityIdBase58, appContractIdBytes);
-  const response = await sdk.documents.query({
-    contractId: YAPPR_KEY_EXCHANGE_CONTRACT_ID,
-    documentType: LOGIN_KEY_EXCHANGE_DOCUMENT_TYPE,
+  const result = await sdk.documents.query({
+    dataContractId: YAPPR_KEY_EXCHANGE_CONTRACT_ID,
+    documentTypeName: LOGIN_KEY_EXCHANGE_DOCUMENT_TYPE,
     where: clause,
     limit: 1,
   });
-  const docs = response?.documents ?? response;
-  const first = Array.isArray(docs) ? docs[0] : null;
-  return first?.$id ?? first?.getDocumentId?.() ?? null;
+  const first = firstDoc(result);
+  return first?.getDocumentId?.() ?? first?.$id ?? null;
+}
+
+/** Take the first Document from a query result (Map or array). */
+export function firstDoc(result) {
+  if (result instanceof Map) {
+    for (const [, doc] of result) return doc;
+    return undefined;
+  }
+  if (Array.isArray(result)) return result[0];
+  if (result && Array.isArray(result.documents)) return result.documents[0];
+  if (result && result.documents instanceof Map) {
+    for (const [, doc] of result.documents) return doc;
+    return undefined;
+  }
+  return undefined;
 }
 
 /**
@@ -333,6 +368,7 @@ export default {
   buildRegistrationKeyData,
   deriveLoginKeyForContract,
   findLoginKeyResponseDocumentId,
+  firstDoc,
   loginKeyResponseWhereClause,
   publishLoginKeyResponse,
   randomNonce,

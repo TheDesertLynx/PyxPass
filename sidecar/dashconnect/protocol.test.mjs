@@ -292,9 +292,9 @@ test('validateKeyRegistration reports registered keys present', () => {
   const encPub = compressedPublicKey(encPriv);
 
   const identityPublicKeys = [
-    { id: 0, type: 0, publicKey: toHex(hash160(authPub)), securityLevel: 0 }, // MASTER ECDSA_HASH160
-    { id: 2, type: 0, publicKey: toHex(hash160(authPub)), securityLevel: 1 }, // auth HIGH
-    { id: 4, type: 4, publicKey: toHex(encPub), securityLevel: 2 }, // enc MEDIUM ECDSA_SECP256K1
+    { id: 0, type: 2, publicKey: toHex(hash160(authPub)), securityLevel: 0 }, // MASTER ECDSA_HASH160
+    { id: 2, type: 2, publicKey: toHex(hash160(authPub)), securityLevel: 2 }, // auth HIGH ECDSA_HASH160
+    { id: 4, type: 0, publicKey: toHex(encPub), securityLevel: 3 }, // enc MEDIUM ECDSA_SECP256K1
   ];
   const result = validateKeyRegistration({ loginKey, identityIdBytes: IDENTITY_ID_BYTES, identityPublicKeys });
   assert.equal(result.registered, true);
@@ -350,8 +350,8 @@ test('buildRegistrationKeyData keys match what validateKeyRegistration recognize
   const data = buildRegistrationKeyData(loginKey, IDENTITY_ID_BYTES);
 
   const identityPublicKeys = [
-    { id: 5, type: 0, publicKey: toHex(data.authKeyData), securityLevel: 1 }, // auth HIGH ECDSA_HASH160
-    { id: 6, type: 4, publicKey: toHex(data.encKeyData), securityLevel: 2 }, // enc MEDIUM ECDSA_SECP256K1
+    { id: 5, type: 2, publicKey: toHex(data.authKeyData), securityLevel: 2 }, // auth HIGH ECDSA_HASH160
+    { id: 6, type: 0, publicKey: toHex(data.encKeyData), securityLevel: 3 }, // enc MEDIUM ECDSA_SECP256K1
   ];
   const result = validateKeyRegistration({ loginKey, identityIdBytes: IDENTITY_ID_BYTES, identityPublicKeys });
   assert.equal(result.registered, true);

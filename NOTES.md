@@ -86,3 +86,14 @@
 - Security rules: NEVER accept CRITICAL/MASTER key for login (require AUTHENTICATION/HIGH); verify granted key on responder identity (not disabled/expired, has budget, private key controlled); response does NOT prove who answered → implement mitigations.
 - DashConnect = ALTERNATIVE entry point. Primary path stays unlock(masterPassword). dashconnectComplete marks session "DashConnect-authenticated" but does NOT unlock vault; UI still prompts master password, then normal unlock().
 - Contract: yappr key-exchange 7UaqHGBJBbRLJ4fUWS45cnud8PPUugJWoGTt1SKwHJ2P. TESTNET ONLY. documentsKeepHistory false. Never store plaintext / commit keys.
+
+## MILESTONE 9 — DONE (2026-10-02, commit b7f33ef6)
+- Implemented sidecar/dashconnect/: base58.mjs (canonical codec), crypto.mjs (ECDH + AES-GCM login-key envelope + login-key/derived-key derivation), uri.mjs (dash-key:/dash-st: parse/build), protocol.mjs (wallet-side responder: buildLoginKeyResponseDraft, buildRegistrationKeyData, validateKeyRegistration, publishLoginKeyResponse + registerLoginKeys SDK adapters).
+- Verified byte-for-byte vs dash wallet fixtures: serialized request == DashConnectUriTest.kt SERIALIZED_REQUEST_HEX; deriveAesKey, auth key, enc key, hash160, and the fixed-nonce encryptLoginKey payload all match KeyExchangeCryptoTests.swift vectors. 32/32 unit tests pass (node --test dashconnect/protocol.test.mjs).
+- chainKey for login-key derivation = identity auth-chain key index 0 (master key, keyId 0); wifToPrivateKeyBytes needs evo-sdk PrivateKey injected at startup.
+- Pushed to origin/develop. Next: M10a sidecar dashconnectInit/Poll/Complete JSON-RPC.
+
+## MILESTONE 10 — IN PROGRESS
+- M10a: sidecar dashconnectInit/dashconnectPoll/dashconnectComplete JSON-RPC methods.
+- M10b: KeePassXC QR/deep-link UI for the dash-key: URI (login via DashConnect option).
+- ACCEPT: e2e testnet login via scripted responder (e2e/wallet-responder.mjs) or DashPay wallet.

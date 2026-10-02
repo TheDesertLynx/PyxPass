@@ -13,6 +13,8 @@ import { readFile } from 'node:fs/promises';
 import { setupDashClient } from './setupDashClient.mjs';
 import { PyxVault } from './vault.mjs';
 import { SyncSession } from './sync.mjs';
+import { injectPrivateKey, registerLoginKeys } from './dashconnect/protocol.mjs';
+import * as dashconnect from './dashconnect/app.mjs';
 
 const HOST = process.env.PYXPASS_HOST || '127.0.0.1';
 const PORT = Number(process.env.PYXPASS_PORT || 8765);
@@ -22,6 +24,7 @@ let keyManager = null;
 let addressKeyManager = null;
 let config = null;
 let session = null; // SyncSession while unlocked
+let dashconnectSession = null; // { identityId, authPrivateKey, encPrivateKey } while DashConnect-authenticated
 
 // ---------------------------------------------------------------------------
 // Connection
@@ -45,6 +48,7 @@ async function connect() {
   sdk = res.sdk;
   keyManager = res.keyManager; // resolves the mnemonic's existing identity
   addressKeyManager = res.addressKeyManager;
+  injectPrivateKey((await import('@dashevo/evo-sdk')).PrivateKey);
 }
 
 async function getVault() {
@@ -133,6 +137,13 @@ const methods = {
     const s = await getSession();
     return { ok: true, entries: s.listEntries(), dirty: s.dirtyCount };
   },
+  /** getEntry <entryId> -> decrypted plaintext (JSON object) for one entry */
+  async getEntry(entryId) {
+    const s = await getSession();
+    const pt = await s.getEntry(entryId);
+    if (!pt) return { ok: false, error: `entry not found: ${entryId}` };
+    return { ok: true, entryId, entry: JSON.parse(pt.toString('utf8')) };
+  },
   /** createEntry <plaintext> -> entryId */
   async createEntry(plaintext) {
     const s = await getSession();
@@ -164,6 +175,57 @@ const methods = {
     const s = await getSession();
     const entries = await s.pull();
     return { ok: true, entries };
+  },
+  // -------------------------------------------------------------------------
+  // DashConnect (M10a): app-side initiator. Login via a Dash wallet; does NOT
+  // unlock the vault. After dashconnectComplete the GUI prompts the master
+  // password and calls unlock() normally.
+  // -------------------------------------------------------------------------
+  /** dashconnectInit <appContractId> [label] -> { connectionId, uri } */
+  async dashconnectInit(appContractId, label = null) {
+    await connect();
+    if (typeof appContractId !== 'string' || !appContractId) {
+      throw new Error('dashconnectInit requires appContractId (base58 or hex)');
+    }
+    const cfg = await loadConfig();
+    const contractId = appContractId === 'self'
+      ? cfg.contract?.id
+      : appContractId;
+    if (!contractId) throw new Error('appContractId missing; pass it or configure contract.id');
+    return await dashconnect.init({ sdk, appContractIdBytes: contractId, label });
+  },
+  /** dashconnectPoll <connectionId> -> { status: pending|ready|expired, ... } */
+  async dashconnectPoll(connectionId) {
+    await connect();
+    if (typeof connectionId !== 'string' || !connectionId) {
+      throw new Error('dashconnectPoll requires connectionId');
+    }
+    return await dashconnect.poll({ sdk, connectionId });
+  },
+  /** dashconnectComplete <connectionId> -> mark session DashConnect-authenticated */
+  async dashconnectComplete(connectionId) {
+    await connect();
+    if (typeof connectionId !== 'string' || !connectionId) {
+      throw new Error('dashconnectComplete requires connectionId');
+    }
+    const res = await dashconnect.complete({ sdk, connectionId });
+    // Store derived auth material for the DashConnect-authenticated session.
+    // The vault is NOT unlocked; the GUI still prompts the master password.
+    dashconnectSession = dashconnect.getAuthMaterial(connectionId);
+    return { ...res, unlocked: false };
+  },
+  /** dashconnectCancel <connectionId> -> drop a pending request */
+  async dashconnectCancel(connectionId) {
+    return dashconnect.cancel(connectionId);
+  },
+  /** dashconnectList -> pending requests for the GUI tray */
+  async dashconnectList() {
+    return { ok: true, requests: dashconnect.list() };
+  },
+  /** dashconnectAuth -> current DashConnect-authenticated session info (if any) */
+  async dashconnectAuth() {
+    if (!dashconnectSession) return { ok: true, authenticated: false };
+    return { ok: true, authenticated: true, ...dashconnectSession };
   },
 };
 

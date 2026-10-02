@@ -448,6 +448,14 @@ MainWindow::MainWindow()
     connect(m_ui->actionDatabaseNew, SIGNAL(triggered()), m_ui->tabWidget, SLOT(newDatabase()));
     connect(m_ui->actionDatabaseOpen, SIGNAL(triggered()), m_ui->tabWidget, SLOT(openDatabase()));
     connect(m_ui->actionDatabaseSave, SIGNAL(triggered()), m_ui->tabWidget, SLOT(saveDatabase()));
+
+    // PyxPass: Open/Save to the Dash Platform via the sidecar (Milestone 7)
+    m_pyxOpenAction = new QAction(tr("Open from Platform…"), m_ui->menuFile);
+    m_pyxSaveAction = new QAction(tr("Save to Platform…"), m_ui->menuFile);
+    m_ui->menuFile->insertAction(m_ui->actionDatabaseSave, m_pyxSaveAction);
+    m_ui->menuFile->insertAction(m_ui->actionDatabaseSave, m_pyxOpenAction);
+    connect(m_pyxOpenAction, SIGNAL(triggered()), m_ui->tabWidget, SLOT(openDatabaseFromPlatform()));
+    connect(m_pyxSaveAction, SIGNAL(triggered()), m_ui->tabWidget, SLOT(saveDatabaseToPlatform()));
     connect(m_ui->actionDatabaseSaveAs, SIGNAL(triggered()), m_ui->tabWidget, SLOT(saveDatabaseAs()));
     connect(m_ui->actionDatabaseSaveBackup, SIGNAL(triggered()), m_ui->tabWidget, SLOT(saveDatabaseBackup()));
     connect(m_ui->actionDatabaseClose, SIGNAL(triggered()), m_ui->tabWidget, SLOT(closeCurrentDatabaseTab()));

@@ -95,7 +95,9 @@ set(core_SOURCES
         streams/LayeredStream.cpp
         streams/qtiocompressor.cpp
         streams/StoreDataStream.cpp
-        streams/SymmetricCipherStream.cpp)
+        streams/SymmetricCipherStream.cpp
+        pyxpass/PyxPassClient.cpp
+        pyxpass/PyxPassBridge.cpp)
 
 set(gui_SOURCES
         gui/styles/styles.qrc
@@ -356,6 +358,7 @@ target_link_libraries(keepassxc_core
         ${qrcode_LIB}
         Qt6::Core
         Qt6::Concurrent
+        Qt6::Network
         ${BOTAN_LIBRARIES}
         ${PCSC_LIBRARIES}
         ${ZXCVBN_LIBRARIES}
@@ -415,6 +418,10 @@ if(_restore_vcpkg_applocal_deps)
 endif()
 target_link_libraries(${PROGNAME} keepassxc_gui)
 set_target_properties(${PROGNAME} PROPERTIES ENABLE_EXPORTS ON)
+
+# PyxPass headless integration test (Milestone 7c) — links core + Qt Network
+add_executable(pyxpass_headless_test pyxpass/PyxPassHeadlessTest.cpp)
+target_link_libraries(pyxpass_headless_test PRIVATE keepassxc_core Qt6::Core Qt6::Network)
 
 if(WIN32)
     set_target_properties(${PROGNAME} PROPERTIES WIN32_EXECUTABLE ON)

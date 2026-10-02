@@ -18,10 +18,15 @@
 #include "DatabaseTabWidget.h"
 
 #include <QFileInfo>
+#include <QInputDialog>
+#include <QJsonObject>
+#include <QLineEdit>
 #include <QTabBar>
 
 #include "autotype/AutoType.h"
 #include "core/Merger.h"
+#include "pyxpass/PyxPassBridge.h"
+#include "pyxpass/PyxPassClient.h"
 #include "core/Tools.h"
 #include "format/CsvExporter.h"
 #include "gui/Clipboard.h"
@@ -141,6 +146,96 @@ void DatabaseTabWidget::openDatabase()
         FileDialog::saveLastDir("db", fileName, true);
         addDatabaseTab(fileName);
     }
+}
+
+/**
+ * Open a vault from the Dash Platform via the sidecar (Milestone 7).
+ * No .kdbx file is read or written: the Database is hydrated in memory.
+ */
+void DatabaseTabWidget::openDatabaseFromPlatform()
+{
+    bool ok = false;
+    QString password = QInputDialog::getText(this,
+                                             tr("PyxPass Unlock"),
+                                             tr("Master password:"),
+                                             QLineEdit::Password,
+                                             QString(),
+                                             &ok);
+    if (!ok || password.isEmpty()) {
+        return;
+    }
+
+    PyxPass::Client client;
+    QString err;
+    QList<PyxPass::EntryMeta> metas;
+    if (!client.ping(&err) || !client.unlock(password, nullptr, &metas)) {
+        emit messageGlobal(tr("PyxPass: %1").arg(client.lastError()), MessageWidget::Error);
+        return;
+    }
+
+    QList<QJsonObject> docs;
+    for (const auto& m : metas) {
+        auto o = client.getEntry(m.entryId, &err);
+        if (o.isEmpty()) {
+            continue;
+        }
+        o.insert(QStringLiteral("pyxpassId"), m.entryId);
+        docs.append(o);
+    }
+
+    auto db = QSharedPointer<Database>::create();
+    PyxPass::hydrateDatabase(db, docs);
+    auto* dbWidget = new DatabaseWidget(db, this);
+    addDatabaseTab(dbWidget);
+    emit databaseOpened(dbWidget);
+}
+
+/**
+ * Persist edits in the current database back to the Dash Platform.
+ * Entries without an on-chain id are created; the rest are updated (LWW).
+ * Requires an unlocked sidecar session (e.g. after Open from Platform).
+ */
+void DatabaseTabWidget::saveDatabaseToPlatform()
+{
+    auto* dbWidget = currentDatabaseWidget();
+    if (!dbWidget) {
+        return;
+    }
+    auto db = dbWidget->database();
+    if (!db || !db->rootGroup()) {
+        return;
+    }
+
+    PyxPass::Client client;
+    QString err;
+    if (!client.ping(&err)) {
+        emit messageGlobal(tr("PyxPass: %1").arg(client.lastError()), MessageWidget::Error);
+        return;
+    }
+
+    int created = 0;
+    int updated = 0;
+    const auto entries = db->rootGroup()->entries();
+    for (auto* entry : entries) {
+        const QString pid = PyxPass::entryId(entry);
+        if (pid.isEmpty()) {
+            const auto newId = client.createEntry(PyxPass::toPlaintext(entry), &err);
+            if (newId.isEmpty()) {
+                emit messageGlobal(tr("PyxPass: failed to create entry: %1").arg(err), MessageWidget::Error);
+                continue;
+            }
+            PyxPass::setEntryId(entry, newId);
+            ++created;
+        } else {
+            auto res = client.updateEntry(pid, PyxPass::toPlaintext(entry));
+            if (!res.ok) {
+                emit messageGlobal(tr("PyxPass: failed to update entry: %1").arg(res.error), MessageWidget::Error);
+                continue;
+            }
+            ++updated;
+        }
+    }
+    emit messageGlobal(tr("PyxPass: saved %1 new and %2 updated entries").arg(created).arg(updated), MessageWidget::Information);
 }
 
 /**

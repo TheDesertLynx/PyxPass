@@ -177,6 +177,8 @@ private:
     SignalMultiplexer m_actionMultiplexer;
     QPointer<QAction> m_clearHistoryAction;
     QPointer<QAction> m_searchWidgetAction;
+    QPointer<QAction> m_pyxOpenAction;
+    QPointer<QAction> m_pyxSaveAction;
     QPointer<QMenu> m_entryContextMenu;
     QPointer<QMenu> m_entryNewContextMenu;
     QPointer<QActionGroup> m_lastDatabasesActions;

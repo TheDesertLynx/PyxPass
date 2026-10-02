@@ -122,6 +122,11 @@ const methods = {
   async lock() {
     if (session) session.lock();
     session = null;
+    // Zero any DashConnect session keys and drop the session (M11c).
+    if (dashconnectSession) {
+      dashconnect.endSession(dashconnectSession.connectionId);
+      dashconnectSession = null;
+    }
     return { ok: true };
   },
   /** getMeta -> meta id + crypto version + rotation (no password needed) */
@@ -211,7 +216,9 @@ const methods = {
     const res = await dashconnect.complete({ sdk, connectionId });
     // Store derived auth material for the DashConnect-authenticated session.
     // The vault is NOT unlocked; the GUI still prompts the master password.
-    dashconnectSession = dashconnect.getAuthMaterial(connectionId);
+    // Derived keys stay as Buffers in the sidecar session (zeroable on lock);
+    // only identityId + loginKeyHash are exposed over RPC (M11c).
+    dashconnectSession = { ...dashconnect.getAuthMaterial(connectionId), connectionId };
     return { ...res, unlocked: false };
   },
   /** dashconnectCancel <connectionId> -> drop a pending request */

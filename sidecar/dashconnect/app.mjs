@@ -143,10 +143,14 @@ export async function poll({ sdk, connectionId }) {
   const encPriv = deriveEncryptionKeyFromLogin(loginKey, identityIdBytes);
 
   req.status = 'ready';
+  // The raw login key is only needed to derive auth/enc — zero it now that
+  // both derived keys are in hand (M11c).
   req.loginKey = loginKey;
   req.authPrivateKey = authPriv;
   req.encPrivateKey = encPriv;
   req.responderIdentityId = responderIdentityId;
+  clearSensitive([loginKey]);
+  req.loginKey = undefined;
 
   // The app ephemeral private key is no longer needed once the login key is
   // decrypted — zero it now.
@@ -173,40 +177,66 @@ export async function complete({ sdk, connectionId }) {
     throw new Error(`DashConnect request not ready (status: ${req.status}); call dashconnectPoll first`);
   }
 
-  const authPrivateKeyHex = toHex(req.authPrivateKey);
-  const encPrivateKeyHex = toHex(req.encPrivateKey);
+  const loginKeyHash = toHex(hash160(req.authPrivateKey));
   const result = {
     ok: true,
     method: 'dashconnect',
     identityId: req.responderIdentityId,
-    authPrivateKeyHex,
-    encPrivateKeyHex,
-    loginKeyHash: toHex(hash160(req.authPrivateKey)),
+    loginKeyHash,
   };
 
-  // Move the request into the session store (keys retained for the session).
+  // Move the request into the session store. Derived keys are kept as zeroable
+  // Buffers (NOT hex strings) so they can be wiped on lock/end (M11c).
   sessions.set(connectionId, {
     identityId: req.responderIdentityId,
-    authPrivateKeyHex,
-    encPrivateKeyHex,
-    loginKeyHash: result.loginKeyHash,
+    authPrivateKey: req.authPrivateKey,
+    encPrivateKey: req.encPrivateKey,
+    loginKeyHash,
     completedAt: Date.now(),
   });
+
   pending.delete(connectionId);
   return result;
 }
 
-/** Read a completed DashConnect session's auth material (identity + keys). */
+/**
+ * Read a completed DashConnect session's serializable auth material.
+ * Derived private keys are intentionally NOT returned here (they stay as
+ * Buffers in the session store, retrievable only via getSessionKeys for
+ * internal use). Keeps them off the JSON-RPC surface (M11c).
+ */
 export function getAuthMaterial(connectionId) {
   const s = sessions.get(connectionId);
   if (!s) return null;
   return {
     identityId: s.identityId,
-    authPrivateKeyHex: s.authPrivateKeyHex,
-    encPrivateKeyHex: s.encPrivateKeyHex,
     loginKeyHash: s.loginKeyHash,
     authenticated: true,
   };
+}
+
+/**
+ * Internal: retrieve the derived session private keys as Buffers (zeroable).
+ * Only for in-process use; never send these over RPC.
+ * @returns {{ authPrivateKey: Buffer, encPrivateKey: Buffer }|null}
+ */
+export function getSessionKeys(connectionId) {
+  const s = sessions.get(connectionId);
+  if (!s) return null;
+  return { authPrivateKey: s.authPrivateKey, encPrivateKey: s.encPrivateKey };
+}
+
+/**
+ * End a DashConnect session: zero the derived key Buffers and drop the store.
+ * Called on vault lock so no auth material survives in memory (M11c).
+ */
+export function endSession(connectionId) {
+  const s = sessions.get(connectionId);
+  if (s) {
+    clearSensitive([s.authPrivateKey, s.encPrivateKey]);
+    sessions.delete(connectionId);
+  }
+  return { ok: true };
 }
 
 /** Cancel a pending request (user declined / QR dismissed). */
@@ -321,7 +351,9 @@ export default {
   REQUEST_TTL_MS,
   cancel,
   complete,
+  endSession,
   getAuthMaterial,
+  getSessionKeys,
   init,
   list,
   poll,

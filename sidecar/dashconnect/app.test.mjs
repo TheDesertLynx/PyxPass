@@ -161,19 +161,31 @@ test('full DashConnect app flow: init -> responder -> poll -> complete', async (
   assert.equal(ready.status, 'ready');
   assert.equal(ready.identityId, IDENTITY_ID_BASE58);
 
-  // 5. complete returns auth material + derived keys
+  // 5. complete returns serializable auth material — derived private keys are
+  //    NOT exposed over RPC (M11c); they stay as Buffers in the session store.
   const complete = await app.complete({ sdk, connectionId: init.connectionId });
   assert.equal(complete.ok, true);
   assert.equal(complete.method, 'dashconnect');
   assert.equal(complete.identityId, IDENTITY_ID_BASE58);
-  assert.equal(complete.authPrivateKeyHex, toHex(deriveAuthKeyFromLogin(loginKey, IDENTITY_ID_BYTES)));
-  assert.equal(complete.encPrivateKeyHex, toHex(deriveEncryptionKeyFromLogin(loginKey, IDENTITY_ID_BYTES)));
+  assert.equal(complete.authPrivateKeyHex, undefined);
+  assert.equal(complete.encPrivateKeyHex, undefined);
 
-  // 6. getAuthMaterial exposes the completed session
+  // 6. getAuthMaterial exposes serializable session info, no keys
   const material = app.getAuthMaterial(init.connectionId);
   assert.equal(material.authenticated, true);
   assert.equal(material.identityId, IDENTITY_ID_BASE58);
-  assert.equal(material.authPrivateKeyHex, complete.authPrivateKeyHex);
+  assert.equal(material.authPrivateKeyHex, undefined);
+
+  // 7. getSessionKeys returns the derived keys as Buffers (internal only)
+  const keys = app.getSessionKeys(init.connectionId);
+  const expectedAuth = deriveAuthKeyFromLogin(loginKey, IDENTITY_ID_BYTES);
+  const expectedEnc = deriveEncryptionKeyFromLogin(loginKey, IDENTITY_ID_BYTES);
+  assert.equal(keys.authPrivateKey.toString('hex'), expectedAuth.toString('hex'));
+  assert.equal(keys.encPrivateKey.toString('hex'), expectedEnc.toString('hex'));
+
+  // 8. endSession zeroes the Buffers and drops the store
+  assert.equal(app.endSession(init.connectionId).ok, true);
+  assert.equal(app.getAuthMaterial(init.connectionId), null);
 });
 
 test('poll returns expired after the TTL', async () => {

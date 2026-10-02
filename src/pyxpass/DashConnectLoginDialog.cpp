@@ -162,6 +162,13 @@ namespace PyxPass
             m_timer->stop();
             m_identityId = identityId;
             showConfirmation(identityId);
+        } else if (status == QStringLiteral("revoked")) {
+            // M11b: the login key was disabled on-chain. Refuse to continue.
+            setStatus(tr("This login key was revoked on-chain. Disabling it stops this sign-in. "
+                         "Sign in with your master password instead."),
+                      true);
+            m_timer->stop();
+            m_doneButton->setEnabled(false);
         } else if (status == QStringLiteral("expired")) {
             setStatus(tr("Request expired. Close this dialog and try again."), true);
             m_timer->stop();

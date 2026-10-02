@@ -215,6 +215,60 @@ export function validateKeyRegistration({ loginKey, identityIdBytes, identityPub
 }
 
 /**
+ * M11b: check whether the login key derived from a loginKeyResponse has been
+ * REVOKED on-chain. The wallet re-derives the SAME key every login
+ * (HKDF(chainKey, identity, "dash:login-key:v1" || contractId)), so once the
+ * user disables it on the identity, every future login from that wallet yields
+ * the same disabled key. We must refuse to accept it (RevokedWalletKey) rather
+ * than silently re-authenticate with a key the user revoked.
+ *
+ * Returns true when either the derived auth or enc public key is present on the
+ * identity but marked disabled (disabledAt set).
+ *
+ * @param {{loginKey: Buffer, identityIdBytes: Buffer, identityPublicKeys: Array}} params
+ * @returns {boolean} true if the derived login key was revoked
+ */
+export function isLoginKeyRevoked({ loginKey, identityIdBytes, identityPublicKeys }) {
+  const authPriv = deriveAuthKeyFromLogin(loginKey, identityIdBytes);
+  const encPriv = deriveEncryptionKeyFromLogin(loginKey, identityIdBytes);
+  const authPub = compressedPublicKey(authPriv);
+  const encPub = compressedPublicKey(encPriv);
+  const authHash = toHex(hash160(authPub));
+  const encPubHex = toHex(encPub);
+
+  const normHex = (v) =>
+    v == null
+      ? ''
+      : v instanceof Uint8Array
+        ? Buffer.from(v).toString('hex')
+        : String(v).toLowerCase();
+
+  // disabledAt is a method on real IdentityPublicKey wasm objects; a property on
+  // plain fixtures. Returns undefined (or null/0) when NOT disabled.
+  const disabledAt = (k) => {
+    const d = typeof k.disabledAt === 'function' ? k.disabledAt() : k.disabledAt;
+    return d == null ? null : d;
+  };
+
+  const pubKeys = identityPublicKeys.map((k) => ({
+    type: String(k.type ?? k.keyTypeNumber),
+    publicKey: normHex(k.publicKey ?? k.data),
+    disabled: disabledAt(k) != null && disabledAt(k) !== 0,
+  }));
+
+  // Auth key revoked: ECDSA_HASH160 (type 2) matching the derived auth hash and disabled.
+  const authRevoked = pubKeys.some(
+    (k) => k.type === '2' && k.publicKey === authHash && k.disabled,
+  );
+  // Enc key revoked: ECDSA_SECP256K1 (type 0) matching the derived enc pub and disabled.
+  const encRevoked = pubKeys.some(
+    (k) => k.type === '0' && k.publicKey === encPubHex && k.disabled,
+  );
+
+  return authRevoked || encRevoked;
+}
+
+/**
  * Publish a loginKeyResponse document to the yappr key-exchange contract,
  * create-or-replace on the (ownerId, contractId) unique slot.
  * Thin SDK adapter; the pure draft is buildLoginKeyResponseDraft.

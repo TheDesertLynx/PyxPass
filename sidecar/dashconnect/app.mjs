@@ -30,6 +30,7 @@ import {
 } from './crypto.mjs';
 import {
   findLoginKeyResponseDocumentId,
+  isLoginKeyRevoked,
   LOGIN_KEY_EXCHANGE_DOCUMENT_TYPE,
   validateKeyRegistration,
   YAPPR_KEY_EXCHANGE_CONTRACT_ID,
@@ -137,6 +138,21 @@ export async function poll({ sdk, connectionId }) {
   });
   if (!validation.registered) {
     throw new Error('loginKeyResponse did not yield registered login keys on responder identity');
+  }
+
+  // M11b: refuse a login key that was revoked (disabled) on-chain. The wallet
+  // re-derives the same key every login, so a disabled key must stop the
+  // sign-in with RevokedWalletKey instead of being silently accepted.
+  if (isLoginKeyRevoked({ loginKey, identityIdBytes, identityPublicKeys: responderIdentity?.publicKeys ?? [] })) {
+    req.status = 'revoked';
+    req.revokedReason = 'login key was disabled on the responder identity';
+    clearSensitive([loginKey]);
+    return {
+      status: 'revoked',
+      connectionId,
+      identityId: responderIdentityId,
+      reason: req.revokedReason,
+    };
   }
 
   const authPriv = deriveAuthKeyFromLogin(loginKey, identityIdBytes);

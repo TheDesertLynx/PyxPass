@@ -138,6 +138,7 @@ function makeMockSdk() {
       }
       return { loginKey, data };
     },
+    responderIdentity,
   };
 }
 
@@ -237,4 +238,41 @@ test('validateKeyRegistration accepts real IdentityPublicKey-shaped keys', async
   ];
   const res = validateKeyRegistration({ loginKey, identityIdBytes: IDENTITY_ID_BYTES, identityPublicKeys: keys });
   assert.equal(res.registered, true);
+});
+
+test('M11b: poll refuses a login key that was disabled on-chain (revoked)', async () => {
+  const { sdk, runResponder, responderIdentity } = makeMockSdk();
+  const init = await app.init({ sdk, appContractIdBytes: CONTRACT_ID });
+  await runResponder(init.uri);
+
+  // The responder registered the derived keys (keyId 5 auth, 6 enc). Now mark
+  // the auth key disabled on-chain, as if the user revoked the wallet key.
+  const authKey = responderIdentity.publicKeys.find((k) => k.keyId === 5);
+  assert.ok(authKey, 'auth key registered');
+  // wasm-shape: disabledAt is a getter returning undefined when not disabled.
+  authKey.disabledAt = () => Date.now();
+
+  const res = await app.poll({ sdk, connectionId: init.connectionId });
+  assert.equal(res.status, 'revoked');
+  assert.ok(res.reason && res.reason.length > 0);
+  // completing a revoked request must not be possible
+  await assert.rejects(app.complete({ sdk, connectionId: init.connectionId }));
+});
+
+test('M11b: a disabled-but-not-matching key does NOT revoke the login', async () => {
+  const { sdk, runResponder, responderIdentity } = makeMockSdk();
+  const init = await app.init({ sdk, appContractIdBytes: CONTRACT_ID });
+  await runResponder(init.uri);
+
+  // Disable an UNRELATED key (e.g. the master key 0) — must not affect login.
+  responderIdentity.publicKeys.push({
+    keyId: 0,
+    type: 0,
+    publicKey: '00'.repeat(33),
+    securityLevel: 0,
+    disabledAt: () => Date.now(),
+  });
+
+  const res = await app.poll({ sdk, connectionId: init.connectionId });
+  assert.equal(res.status, 'ready');
 });

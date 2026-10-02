@@ -36,6 +36,7 @@ import {
   buildLoginKeyResponseDraft,
   buildRegistrationKeyData,
   deriveLoginKeyForContract,
+  isLoginKeyRevoked,
   loginKeyResponseWhereClause,
   validateKeyRegistration,
   YAPPR_KEY_EXCHANGE_CONTRACT_ID,
@@ -355,6 +356,57 @@ test('buildRegistrationKeyData keys match what validateKeyRegistration recognize
   ];
   const result = validateKeyRegistration({ loginKey, identityIdBytes: IDENTITY_ID_BYTES, identityPublicKeys });
   assert.equal(result.registered, true);
+});
+
+test('M11b: isLoginKeyRevoked detects a disabled auth key (plain fixture shape)', () => {
+  const loginKey = deriveLoginKeyForContract(WALLET_PRIVATE_KEY, IDENTITY_ID_BYTES, CONTRACT_ID_BYTES);
+  const data = buildRegistrationKeyData(loginKey, IDENTITY_ID_BYTES);
+  const keys = [
+    { id: 5, type: 2, publicKey: toHex(data.authKeyData), securityLevel: 2, disabledAt: Date.now() }, // disabled
+    { id: 6, type: 0, publicKey: toHex(data.encKeyData), securityLevel: 3 }, // NOT disabled
+  ];
+  assert.equal(isLoginKeyRevoked({ loginKey, identityIdBytes: IDENTITY_ID_BYTES, identityPublicKeys: keys }), true);
+});
+
+test('M11b: isLoginKeyRevoked detects a disabled enc key', () => {
+  const loginKey = deriveLoginKeyForContract(WALLET_PRIVATE_KEY, IDENTITY_ID_BYTES, CONTRACT_ID_BYTES);
+  const data = buildRegistrationKeyData(loginKey, IDENTITY_ID_BYTES);
+  const keys = [
+    { id: 5, type: 2, publicKey: toHex(data.authKeyData), securityLevel: 2 }, // auth NOT disabled
+    { id: 6, type: 0, publicKey: toHex(data.encKeyData), securityLevel: 3, disabledAt: Date.now() }, // disabled
+  ];
+  assert.equal(isLoginKeyRevoked({ loginKey, identityIdBytes: IDENTITY_ID_BYTES, identityPublicKeys: keys }), true);
+});
+
+test('M11b: isLoginKeyRevoked false when no matching key is disabled', () => {
+  const loginKey = deriveLoginKeyForContract(WALLET_PRIVATE_KEY, IDENTITY_ID_BYTES, CONTRACT_ID_BYTES);
+  const data = buildRegistrationKeyData(loginKey, IDENTITY_ID_BYTES);
+  const keys = [
+    { id: 5, type: 2, publicKey: toHex(data.authKeyData), securityLevel: 2 },
+    { id: 6, type: 0, publicKey: toHex(data.encKeyData), securityLevel: 3 },
+  ];
+  assert.equal(isLoginKeyRevoked({ loginKey, identityIdBytes: IDENTITY_ID_BYTES, identityPublicKeys: keys }), false);
+});
+
+test('M11b: isLoginKeyRevoked false when an unrelated key is disabled', () => {
+  const loginKey = deriveLoginKeyForContract(WALLET_PRIVATE_KEY, IDENTITY_ID_BYTES, CONTRACT_ID_BYTES);
+  const data = buildRegistrationKeyData(loginKey, IDENTITY_ID_BYTES);
+  const keys = [
+    { id: 5, type: 2, publicKey: toHex(data.authKeyData), securityLevel: 2 },
+    { id: 6, type: 0, publicKey: toHex(data.encKeyData), securityLevel: 3 },
+    { id: 0, type: 0, publicKey: '00'.repeat(33), securityLevel: 0, disabledAt: Date.now() }, // master, unrelated
+  ];
+  assert.equal(isLoginKeyRevoked({ loginKey, identityIdBytes: IDENTITY_ID_BYTES, identityPublicKeys: keys }), false);
+});
+
+test('M11b: isLoginKeyRevoked handles wasm-shape getter disabledAt', () => {
+  const loginKey = deriveLoginKeyForContract(WALLET_PRIVATE_KEY, IDENTITY_ID_BYTES, CONTRACT_ID_BYTES);
+  const data = buildRegistrationKeyData(loginKey, IDENTITY_ID_BYTES);
+  const keys = [
+    { keyTypeNumber: 2, securityLevelNumber: 2, data: toHex(data.authKeyData), disabledAt: () => Date.now() },
+    { keyTypeNumber: 0, securityLevelNumber: 3, data: toHex(data.encKeyData), disabledAt: () => undefined },
+  ];
+  assert.equal(isLoginKeyRevoked({ loginKey, identityIdBytes: IDENTITY_ID_BYTES, identityPublicKeys: keys }), true);
 });
 
 // ============================================================

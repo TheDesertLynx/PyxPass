@@ -51,6 +51,22 @@ namespace PyxPass
     };
 
     /**
+     * Identity confirmation data for a ready DashConnect request (M11a).
+     * Shown BEFORE completing the login so the user can verify who answered.
+     */
+    struct ConfirmationData
+    {
+        bool ok = false;
+        QString identityId; // full, unshortened
+        QString dpnsName; // empty when none
+        qint64 dpnsRegisteredAt = 0;
+        bool isNewIdentity = false;
+        bool isNameRecent = false;
+        bool noDpnsName = false;
+        QString error;
+    };
+
+    /**
      * Blocking HTTP JSON-RPC client for the PyxPass sidecar.
      * Calls are synchronous (spins a local QEventLoop) so it slots cleanly
      * into the fork's existing Database load/save flow.
@@ -90,6 +106,8 @@ namespace PyxPass
         bool dashconnectComplete(const QString& connectionId,
                                  QString* identityId = nullptr,
                                  QString* err = nullptr);
+        /** Fetch identity confirmation data for a ready request (M11a). */
+        ConfirmationData dashconnectConfirmation(const QString& connectionId);
 
         QString lastError() const { return m_lastError; }
 

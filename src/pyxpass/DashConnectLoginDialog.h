@@ -55,16 +55,20 @@ namespace PyxPass
     private slots:
         void poll();
         void onReady();
+        void confirmIdentity();
         void copyUri();
         void cancel();
 
     private:
         void startInit(const QString& label);
         void setStatus(const QString& text, bool error = false);
+        void showConfirmation(const QString& identityId);
+        void showPasswordPrompt();
 
         PyxPass::Client* m_client = nullptr;
         QString m_connectionId;
         QString m_uri;
+        QString m_identityId;
 
         QLabel* m_qrLabel = nullptr;
         SquareSvgWidget* m_qrWidget = nullptr;
@@ -74,8 +78,16 @@ namespace PyxPass
         QPushButton* m_doneButton = nullptr;
         QTimer* m_timer = nullptr;
 
+        // Confirmation panel (M11a)
+        QLabel* m_confirmLabel = nullptr;
+        QLabel* m_confirmWarnings = nullptr;
+        QLineEdit* m_confirmEdit = nullptr;
+        QPushButton* m_confirmButton = nullptr;
+
         int m_polls = 0;
         bool m_ready = false;
+        bool m_confirmed = false;
+        QString m_expectedConfirm;
     };
 } // namespace PyxPass
 

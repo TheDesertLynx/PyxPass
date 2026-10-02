@@ -44,3 +44,7 @@ sidecar/keys/
 # Node
 node_modules/
 
+# Per-device runtime state
+config/dashconnect-state.json
+aqtinstall.log
+

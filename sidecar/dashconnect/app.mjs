@@ -239,6 +239,17 @@ export function endSession(connectionId) {
   return { ok: true };
 }
 
+/**
+ * Get the responder identityId of a connection that has polled 'ready' but has
+ * not yet been completed. Used by the confirmation step (M11a) to show the full
+ * identity before the session is committed. Returns null unless ready.
+ */
+export function getReadyIdentityId(connectionId) {
+  const req = pending.get(connectionId);
+  if (!req || req.status !== 'ready') return null;
+  return req.responderIdentityId;
+}
+
 /** Cancel a pending request (user declined / QR dismissed). */
 export function cancel(connectionId) {
   const req = pending.get(connectionId);
@@ -353,6 +364,7 @@ export default {
   complete,
   endSession,
   getAuthMaterial,
+  getReadyIdentityId,
   getSessionKeys,
   init,
   list,

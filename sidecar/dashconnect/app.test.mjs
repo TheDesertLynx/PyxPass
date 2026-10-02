@@ -206,6 +206,27 @@ test('complete before ready throws', async () => {
   await assert.rejects(() => app.complete({ sdk, connectionId: init.connectionId }), /not ready/);
 });
 
+test('getReadyIdentityId only returns the identity once polled ready (M11a)', async () => {
+  const { sdk, runResponder } = makeMockSdk();
+  const init = await app.init({ sdk, appContractIdBytes: CONTRACT_ID });
+
+  // not ready yet -> null
+  assert.equal(app.getReadyIdentityId(init.connectionId), null);
+
+  // responder answers
+  const { loginKey } = await runResponder(init.uri);
+
+  // poll becomes ready
+  const ready = await app.poll({ sdk, connectionId: init.connectionId });
+  assert.equal(ready.status, 'ready');
+  // now exposes the full identity for confirmation
+  assert.equal(app.getReadyIdentityId(init.connectionId), IDENTITY_ID_BASE58);
+
+  // after complete, the pending slot is gone -> null
+  await app.complete({ sdk, connectionId: init.connectionId });
+  assert.equal(app.getReadyIdentityId(init.connectionId), null);
+});
+
 test('validateKeyRegistration accepts real IdentityPublicKey-shaped keys', async () => {
   const loginKey = deriveLoginKeyForContract(WALLET_CHAIN_KEY, IDENTITY_ID_BYTES, CONTRACT_ID);
   const data = buildRegistrationKeyData(loginKey, IDENTITY_ID_BYTES);

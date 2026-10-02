@@ -19,6 +19,7 @@
 #include <QApplication>
 #include <QBuffer>
 #include <QClipboard>
+#include <QDateTime>
 #include <QHBoxLayout>
 #include <QInputDialog>
 #include <QLineEdit>
@@ -70,10 +71,34 @@ namespace PyxPass
         m_status->setWordWrap(true);
         root->addWidget(m_status);
 
+        // Confirmation panel (M11a): shown after the wallet responds, before
+        // the master password. Requires confirming the identity start/end.
+        m_confirmLabel = new QLabel();
+        m_confirmLabel->setWordWrap(true);
+        m_confirmLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        m_confirmWarnings = new QLabel();
+        m_confirmWarnings->setWordWrap(true);
+        m_confirmEdit = new QLineEdit();
+        m_confirmEdit->setPlaceholderText(tr("Type first 7…last 5 chars of the identity"));
+        m_confirmButton = new QPushButton(tr("Confirm Identity"));
+        m_confirmButton->setEnabled(false);
+        root->addWidget(m_confirmLabel);
+        root->addWidget(m_confirmWarnings);
+        root->addWidget(m_confirmEdit);
+        root->addWidget(m_confirmButton);
+        m_confirmLabel->hide();
+        m_confirmWarnings->hide();
+        m_confirmEdit->hide();
+        m_confirmButton->hide();
+
         m_doneButton->setEnabled(false);
 
         connect(m_copyButton, &QPushButton::clicked, this, &DashConnectLoginDialog::copyUri);
         connect(m_doneButton, &QPushButton::clicked, this, &DashConnectLoginDialog::onReady);
+        connect(m_confirmButton, &QPushButton::clicked, this, &DashConnectLoginDialog::confirmIdentity);
+        connect(m_confirmEdit, &QLineEdit::textChanged, this, [this](const QString&) {
+            m_confirmButton->setEnabled(!m_confirmEdit->text().isEmpty());
+        });
         connect(m_timer, &QTimer::timeout, this, &DashConnectLoginDialog::poll);
         connect(this, &QDialog::rejected, this, &DashConnectLoginDialog::cancel);
 
@@ -132,11 +157,11 @@ namespace PyxPass
         }
 
         if (status == QStringLiteral("ready")) {
-            setStatus(tr("Wallet confirmed. Enter your master password to finish."));
+            setStatus(tr("Wallet responded. Verify who you are logging in as."));
             m_ready = true;
             m_timer->stop();
-            m_doneButton->setEnabled(true);
-            m_status->setProperty("identityId", identityId);
+            m_identityId = identityId;
+            showConfirmation(identityId);
         } else if (status == QStringLiteral("expired")) {
             setStatus(tr("Request expired. Close this dialog and try again."), true);
             m_timer->stop();
@@ -144,8 +169,77 @@ namespace PyxPass
         // "pending": keep polling.
     }
 
+    void DashConnectLoginDialog::showConfirmation(const QString& identityId)
+    {
+        auto conf = m_client->dashconnectConfirmation(m_connectionId);
+        if (!conf.ok) {
+            setStatus(tr("Could not load identity confirmation: %1").arg(conf.error), true);
+            m_doneButton->setEnabled(false);
+            return;
+        }
+
+        // Show the full identity id (selectable) and the DPNS name, if any.
+        QString text = tr("You are logging in as identity\n%1").arg(conf.identityId);
+        if (!conf.dpnsName.isEmpty()) {
+            text += QStringLiteral("\n\n") + tr("DPNS name: %1").arg(conf.dpnsName);
+            if (conf.dpnsRegisteredAt > 0) {
+                text += QStringLiteral(" (") + tr("registered %1")
+                            .arg(QDateTime::fromMSecsSinceEpoch(conf.dpnsRegisteredAt)
+                                     .toString(Qt::ISODate))
+                        + QStringLiteral(")");
+            }
+        }
+        m_confirmLabel->setText(text);
+
+        // Loud warnings.
+        QStringList warns;
+        if (conf.noDpnsName) {
+            warns << tr("This identity has no DPNS name. Verify the full id with your wallet.");
+        }
+        if (conf.isNewIdentity) {
+            warns << tr("WARNING: this is a different identity than this device logged in as before.");
+        }
+        if (conf.isNameRecent) {
+            warns << tr("WARNING: this DPNS name was registered less than a day ago.");
+        }
+        m_confirmWarnings->setText(warns.isEmpty() ? QString() : warns.join(QStringLiteral("\n")));
+        m_confirmWarnings->setStyleSheet(QStringLiteral("color: #b00020;"));
+
+        // Require confirming the start + end of the id, per the wallet's screen.
+        m_expectedConfirm = identityId.left(7) + QStringLiteral("\u2026") + identityId.right(5);
+
+        m_confirmLabel->show();
+        m_confirmWarnings->show();
+        m_confirmEdit->show();
+        m_confirmButton->show();
+        m_confirmEdit->setFocus();
+        m_confirmButton->setEnabled(!m_confirmEdit->text().isEmpty());
+        m_doneButton->setEnabled(false);
+    }
+
+    void DashConnectLoginDialog::confirmIdentity()
+    {
+        if (m_confirmEdit->text().trimmed() != m_expectedConfirm) {
+            setStatus(tr("That does not match the identity start/end. Copy it from the wallet's approval screen."), true);
+            m_confirmEdit->selectAll();
+            return;
+        }
+        m_confirmed = true;
+        setStatus(tr("Identity confirmed. Enter your master password to finish."));
+        m_confirmLabel->hide();
+        m_confirmWarnings->hide();
+        m_confirmEdit->hide();
+        m_confirmButton->hide();
+        m_doneButton->setEnabled(true);
+    }
+
     void DashConnectLoginDialog::onReady()
     {
+        if (!m_confirmed) {
+            setStatus(tr("Confirm the identity before entering your password."), true);
+            return;
+        }
+
         bool ok = false;
         const QString password = QInputDialog::getText(this,
                                                        tr("PyxPass Unlock"),

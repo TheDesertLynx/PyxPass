@@ -9,7 +9,7 @@
 // and exposes stub methods for the crypto/CRUD milestones (M4, M5).
 //
 import http from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { setupDashClient } from './setupDashClient.mjs';
 import { PyxVault } from './vault.mjs';
 import { SyncSession } from './sync.mjs';
@@ -41,6 +41,33 @@ async function loadConfig() {
   }
   return config;
 }
+
+// ---------------------------------------------------------------------------
+// DashConnect state persistence (last authenticated identity, for M11a)
+// ---------------------------------------------------------------------------
+
+const DASHCONNECT_STATE_FILE = new URL('../config/dashconnect-state.json', import.meta.url);
+
+async function loadLastDashIdentity() {
+  try {
+    const state = JSON.parse(await readFile(DASHCONNECT_STATE_FILE, 'utf8'));
+    return state.lastIdentityId ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function saveLastDashIdentity(identityId) {
+  try {
+    await writeFile(DASHCONNECT_STATE_FILE, JSON.stringify({ lastIdentityId: identityId }, null, 2));
+  } catch {
+    // best-effort; a failed persist only disables the "new identity" warning
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Connection
+// ---------------------------------------------------------------------------
 
 async function connect() {
   if (sdk) return;
@@ -219,6 +246,9 @@ const methods = {
     // Derived keys stay as Buffers in the sidecar session (zeroable on lock);
     // only identityId + loginKeyHash are exposed over RPC (M11c).
     dashconnectSession = { ...dashconnect.getAuthMaterial(connectionId), connectionId };
+    // Remember which identity this device now DashConnect-authenticates as, so
+    // the next login can warn if it differs (M11a "new identity" warning).
+    await saveLastDashIdentity(res.identityId);
     return { ...res, unlocked: false };
   },
   /** dashconnectCancel <connectionId> -> drop a pending request */
@@ -233,6 +263,38 @@ const methods = {
   async dashconnectAuth() {
     if (!dashconnectSession) return { ok: true, authenticated: false };
     return { ok: true, authenticated: true, ...dashconnectSession };
+  },
+  /**
+   * dashconnectConfirmation <connectionId> -> identity confirmation data (M11a).
+   * After poll returns 'ready' (but BEFORE complete), the GUI fetches the full
+   * responder identity id, its DPNS name + registration time, and flags to warn
+   * about a new/other identity, a name less than a day old, or no DPNS name.
+   */
+  async dashconnectConfirmation(connectionId) {
+    await connect();
+    const identityId = dashconnect.getReadyIdentityId(connectionId);
+    if (!identityId) {
+      throw new Error('DashConnect connection is not ready; call dashconnectPoll first');
+    }
+    const dpnsName = await sdk.dpns.username(identityId);
+    let dpnsRegisteredAt = null;
+    if (dpnsName) {
+      const info = await sdk.dpns.getUsernameByName(dpnsName);
+      dpnsRegisteredAt = info?.createdAt ?? null;
+    }
+    const lastIdentityId = await loadLastDashIdentity();
+    const isNewIdentity = !!lastIdentityId && lastIdentityId !== identityId;
+    const isNameRecent =
+      !!dpnsRegisteredAt && Date.now() - dpnsRegisteredAt < 24 * 60 * 60 * 1000;
+    return {
+      ok: true,
+      identityId, // full, unshortened
+      dpnsName: dpnsName ?? null,
+      dpnsRegisteredAt: dpnsRegisteredAt == null ? null : Number(dpnsRegisteredAt),
+      isNewIdentity,
+      isNameRecent,
+      noDpnsName: !dpnsName,
+    };
   },
 };
 

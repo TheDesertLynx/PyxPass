@@ -79,7 +79,7 @@ Milestones must be completed in order. ACCEPT criteria must be verified before m
 - ACCEPT ✅: end-to-end DashConnect login on testnet (C++ client + live sidecar: init -> poll ready -> complete, ALL PASS 2026-10-02)
 
 ## MILESTONE 11 — Security hardening
-- [ ] M11a: Confirmation mitigations (full identityId + DPNS name + reg time; warn new <1d / no DPNS; confirm username + start/end of identityId)
+- [x] M11a: Confirmation mitigations (full identityId + DPNS name + reg time; warn new <1d / no DPNS; confirm username + start/end of identityId)
 - [ ] M11b: RevokedWalletKey refusal — never re-accept a disabled login key
 - [ ] M11c: Buffer zeroing after use (ephemeral keys, login keys, derived keys, envelope AES key, decoded privkey bytes)
 - [ ] M11d: 5-min request expiry + countdown; QR kept private; deep-link hijack note

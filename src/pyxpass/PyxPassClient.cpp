@@ -291,6 +291,27 @@ namespace PyxPass
         return true;
     }
 
+    ConfirmationData Client::dashconnectConfirmation(const QString& connectionId)
+    {
+        ConfirmationData data;
+        m_lastError.clear();
+        QJsonArray params;
+        params.append(connectionId);
+        auto res = call(QStringLiteral("dashconnectConfirmation"), params, &m_lastError);
+        if (res.isEmpty() || !res.value(QStringLiteral("ok")).toBool()) {
+            data.error = m_lastError;
+            return data;
+        }
+        data.ok = true;
+        data.identityId = res.value(QStringLiteral("identityId")).toString();
+        data.dpnsName = res.value(QStringLiteral("dpnsName")).toString();
+        data.dpnsRegisteredAt = res.value(QStringLiteral("dpnsRegisteredAt")).toVariant().toLongLong();
+        data.isNewIdentity = res.value(QStringLiteral("isNewIdentity")).toBool();
+        data.isNameRecent = res.value(QStringLiteral("isNameRecent")).toBool();
+        data.noDpnsName = res.value(QStringLiteral("noDpnsName")).toBool();
+        return data;
+    }
+
     void Client::parseEntryMetas(const QJsonArray& arr, QList<EntryMeta>* out)
     {
         for (const auto& v : arr) {

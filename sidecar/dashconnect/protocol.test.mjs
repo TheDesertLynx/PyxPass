@@ -281,6 +281,28 @@ test('buildLoginKeyResponseDraft encrypts a decryptable login key (round-trip)',
   const decrypted = decryptLoginKey(draft.encryptedPayload, APP_PRIVATE_KEY, draft.walletEphemeralPublicKey);
   assert.deepEqual(decrypted, KOTLIN_LOGIN_KEY);
 });
+test('M11c: internally-generated wallet ephemeral priv is zeroed after use', () => {
+  const draft = buildLoginKeyResponseDraft({
+    loginKey: KOTLIN_LOGIN_KEY,
+    appContractId: CONTRACT_ID_BYTES,
+    appEphemeralPubKey: APP_EPHEMERAL_PUB,
+    // walletEphemeralPrivateKey omitted -> generated inside
+  });
+  const priv = draft.walletEphemeralPrivateKey;
+  assert.equal(priv.length, 32);
+  // Must be wiped: all zero bytes.
+  assert.equal(Buffer.from(priv).every((b) => b === 0), true);
+});
+test('M11c: a caller-provided wallet ephemeral priv is NOT wiped', () => {
+  const draft = buildLoginKeyResponseDraft({
+    loginKey: KOTLIN_LOGIN_KEY,
+    appContractId: CONTRACT_ID_BYTES,
+    appEphemeralPubKey: APP_EPHEMERAL_PUB,
+    walletEphemeralPrivateKey: WALLET_PRIVATE_KEY,
+  });
+  // Caller-owned -> returned untouched.
+  assert.deepEqual(draft.walletEphemeralPrivateKey, WALLET_PRIVATE_KEY);
+});
 
 // ============================================================
 // Key registration validation (first-login detection)

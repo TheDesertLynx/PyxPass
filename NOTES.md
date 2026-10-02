@@ -112,3 +112,10 @@
   - GUI DashConnectLoginDialog poll: 'revoked' -> red message "This login key was revoked on-chain... sign in with your master password instead", disables continue.
   - Tests: 44/44 dashconnect (was 37; +4 direct isLoginKeyRevoked tests in protocol.test.mjs + 2 poll-based in app.test.mjs).
   - LIVE PROOF: disabled keyId 7 (login auth key) on identity 5dNz... via master-key IdentityUpdate, then fresh login -> dashconnectPoll returns status 'revoked' (identity 5dNz..., reason "...disabled on the responder identity"); dashconnectComplete refuses. NOTE: this permanently disables DashConnect login for that testnet identity (the intended revocation behavior); vault unlock via masterPassword is unaffected.
+## MILESTONE 11 — M11c DONE (2026-10-02), M11d next
+- M11c ✅ DONE (this commit): buffer zeroing after use.
+  - protocol.mjs: clearSensitiveBytes zeroes the internally-generated wallet ephemeral priv in buildLoginKeyResponseDraft after encryption (caller-provided key left untouched); zeroes derived authPriv/encPriv intermediates in buildRegistrationKeyData, and authPriv/encPriv/authPub/encPub in validateKeyRegistration + isLoginKeyRevoked after computing hex/hash outputs. Only public material is returned.
+  - crypto.mjs already zeroed aesKey + sharedX in encryptLoginKey/decryptLoginKey (envelope AES key); app.mjs already zeroes loginKey + appEphemeralPriv in poll/cancel, and derived session keys on endSession.
+  - e2e responder (decoded privkey bytes): zeroes chainKey + loginKey after publishing.
+  - Tests: 46/46 dashconnect (was 44; +2 M11c zeroing assertions: internally-generated ephemeral priv is all-zero after use; caller-provided priv untouched).
+  - Live sanity after restart: fresh init -> responder -> poll still returns 'revoked' (exercises the modified validateKeyRegistration + isLoginKeyRevoked), confirming no regression from zeroing.

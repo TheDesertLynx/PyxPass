@@ -21,6 +21,7 @@
 
 import crypto from 'node:crypto';
 import {
+  clearSensitiveBytes,
   compressedPublicKey,
   deriveAuthKeyFromLogin,
   deriveEncryptionKeyFromLogin,
@@ -97,9 +98,14 @@ export function buildLoginKeyResponseDraft({
   const appEphemeralPubKeyHash = hash160(appEphemeralPubKey);
   if (appEphemeralPubKeyHash.length !== 20) throw new Error('Invalid hash160');
 
+  const generatedPriv = walletEphemeralPrivateKey == null;
   const priv = walletEphemeralPrivateKey ?? generateEphemeralKeypair().privateKey;
   const walletEphemeralPublicKey = compressedPublicKey(priv);
   const encryptedPayload = encryptLoginKey(loginKey, priv, appEphemeralPubKey, randomNonce());
+
+  // M11c: the wallet ephemeral private key is spent after encryption — zero it
+  // now if we generated it. A caller-provided key stays caller-owned.
+  if (generatedPriv) clearSensitiveBytes(priv);
 
   const properties = {
     contractId: base58Encode(appContractId),
@@ -146,12 +152,16 @@ export function buildRegistrationKeyData(loginKey, identityIdBytes) {
   const encPriv = deriveEncryptionKeyFromLogin(loginKey, identityIdBytes);
   const authPub = compressedPublicKey(authPriv);
   const encPub = compressedPublicKey(encPriv);
-  return {
+  const result = {
     authPublicKey: authPub,
     authKeyData: hash160(authPub), // ECDSA_HASH160 stores hash160 of the pub key
     encPublicKey: encPub,
     encKeyData: encPub, // ECDSA_SECP256K1 stores the pub key directly
   };
+  // M11c: zero the derived private-key intermediates; only public material is returned.
+  clearSensitiveBytes(authPriv);
+  clearSensitiveBytes(encPriv);
+  return result;
 }
 
 /**
@@ -206,6 +216,12 @@ export function validateKeyRegistration({ loginKey, identityIdBytes, identityPub
       k.publicKey === encPubHex &&
       (k.securityLevel === 3 || k.securityLevel === 2 || k.securityLevel === 0),
   );
+
+  // M11c: zero derived private-key intermediates after use.
+  clearSensitiveBytes(authPriv);
+  clearSensitiveBytes(encPriv);
+  clearSensitiveBytes(authPub);
+  clearSensitiveBytes(encPub);
 
   return {
     registered: authenticationPresent && encryptionPresent,
@@ -264,6 +280,12 @@ export function isLoginKeyRevoked({ loginKey, identityIdBytes, identityPublicKey
   const encRevoked = pubKeys.some(
     (k) => k.type === '0' && k.publicKey === encPubHex && k.disabled,
   );
+
+  // M11c: zero derived private-key intermediates after use.
+  clearSensitiveBytes(authPriv);
+  clearSensitiveBytes(encPriv);
+  clearSensitiveBytes(authPub);
+  clearSensitiveBytes(encPub);
 
   return authRevoked || encRevoked;
 }

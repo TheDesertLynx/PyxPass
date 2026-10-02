@@ -34,7 +34,7 @@ import {
   LOGIN_KEY_EXCHANGE_DOCUMENT_TYPE,
 } from '../dashconnect/protocol.mjs';
 import { parseKeyExchangeUri } from '../dashconnect/uri.mjs';
-import { toHex, hash160 } from '../dashconnect/crypto.mjs';
+import { toHex, hash160, clearSensitiveBytes } from '../dashconnect/crypto.mjs';
 import { base58Encode } from '../dashconnect/base58.mjs';
 import { Document, PrivateKey } from '@dashevo/evo-sdk';
 
@@ -229,6 +229,11 @@ async function main() {
       }
     }, 'register');
   }
+
+  // M11c: zero the decoded chain key and derived login key now that the
+  // response is published (they are spent; never keep them around).
+  clearSensitiveBytes(chainKey);
+  clearSensitiveBytes(loginKey);
 
   console.log('[responder] done');
 }

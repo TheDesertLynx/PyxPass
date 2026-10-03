@@ -44,7 +44,7 @@ Milestones must be completed in order. ACCEPT criteria must be verified before m
 - ACCEPT: CLI can unlock, list, create, edit, delete; second identity/device sees updates; conflicts resolve LWW — DONE (`sync.mjs`, `pyxpass-cli.mjs`, `sync.test.mjs`, RPC wired in `index.js`)
 - `npm run test:m6` ALL PASS: second device sees updates; edit-vs-edit resolves LWW; edit-vs-delete remote-delete wins
 
-## MILESTONE 7 — KeePassXC fork wiring
+## MILESTONE 7 — KeePassXC fork wiring ✅
 - [x] M7a: Build toolchain — get the fork compiling (Qt6 + Botan + zlib/minizip + pcsc/libusb) without sudo
 - [x] M7b: PyxPass sidecar HTTP client (C++): JSON-RPC over HTTP to 127.0.0.1:8765 (unlock/list/create/update/delete/save/lock)
 - [x] M7c: Storage integration — hydrate in-memory Database from sidecar.unlock; persist edits via sidecar.save
@@ -52,7 +52,7 @@ Milestones must be completed in order. ACCEPT criteria must be verified before m
 - [x] M7e: No .kdbx writes (.kdbx import only as optional seed path); verify ACCEPT (commit 87152607)
 - ACCEPT ✅: fork opens a vault from Platform, edits entries, and changes persist (pyxpass_headless_test exits 0 = ALL PASS, live sidecar)
 
-## MILESTONE 8 — Multi-machine test
+## MILESTONE 8 — Multi-machine test ✅
 - [x] M8a: Two sidecar instances / sessions (same identity = two devices) edit entries concurrently
 - [x] M8b: Verify last-writer-wins and no data loss
 - ACCEPT ✅: multi-machine sync works without data loss (e2e/m8-multidevice.mjs: 13/13 checks PASS against live testnet — two CLI processes as independent devices; later-edit-wins, earlier-edit-loses, edit-vs-delete remote-delete wins, no data loss/resurrection)
@@ -73,12 +73,12 @@ Milestones must be completed in order. ACCEPT criteria must be verified before m
 - [x] M9d: First-login registration (dash-st: URI): IdentityUpdate adding auth key (ECDSA_HASH160, AUTHENTICATION/HIGH) + enc key (ECDSA_SECP256K1, ENCRYPTION/MEDIUM) — buildRegistrationKeyData + registerLoginKeys adapter
 - ACCEPT ✅: request byte-identical to DashConnectUriTest.kt SERIALIZED_REQUEST_HEX; key derivation matches KeyExchangeCryptoTest.kt vectors — 32/32 unit tests pass (sidecar/dashconnect/protocol.test.mjs)
 
-## MILESTONE 10 — Sidecar DashConnect JSON-RPC + KeePassXC UI
+## MILESTONE 10 — Sidecar DashConnect JSON-RPC + KeePassXC UI ✅
 - [x] M10a: sidecar dashconnectInit/dashconnectPoll/dashconnectComplete JSON-RPC methods (commit 57e56e81)
 - [x] M10b: KeePassXC QR/deep-link UI for the dash-key: URI (login via DashConnect option) (commit 9e389352)
 - ACCEPT ✅: end-to-end DashConnect login on testnet (C++ client + live sidecar: init -> poll ready -> complete, ALL PASS 2026-10-02)
 
-## MILESTONE 11 — Security hardening
+## MILESTONE 11 — Security hardening ✅
 - [x] M11a: Confirmation mitigations (full identityId + DPNS name + reg time; warn new <1d / no DPNS; confirm username + start/end of identityId)
 - [x] M11b: RevokedWalletKey refusal — never re-accept a disabled login key
 - [x] M11c: Buffer zeroing after use (ephemeral keys, login keys, derived keys, envelope AES key, decoded privkey bytes)

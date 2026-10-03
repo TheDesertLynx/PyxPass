@@ -53,9 +53,9 @@ Milestones must be completed in order. ACCEPT criteria must be verified before m
 - ACCEPT ✅: fork opens a vault from Platform, edits entries, and changes persist (pyxpass_headless_test exits 0 = ALL PASS, live sidecar)
 
 ## MILESTONE 8 — Multi-machine test
-- [ ] M8a: Two sidecar instances / sessions (same identity = two devices) edit entries concurrently
-- [ ] M8b: Verify last-writer-wins and no data loss
-- ACCEPT: multi-machine sync works without data loss
+- [x] M8a: Two sidecar instances / sessions (same identity = two devices) edit entries concurrently
+- [x] M8b: Verify last-writer-wins and no data loss
+- ACCEPT ✅: multi-machine sync works without data loss (e2e/m8-multidevice.mjs: 13/13 checks PASS against live testnet — two CLI processes as independent devices; later-edit-wins, earlier-edit-loses, edit-vs-delete remote-delete wins, no data loss/resurrection)
 
 ## GUARDRAILS (hard rules — never violate)
 - TESTNET ONLY. No mainnet spending unless explicitly told.

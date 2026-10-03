@@ -18,9 +18,9 @@
 //   > lock / exit
 //
 // One-shot (for scripting): `node pyxpass-cli.mjs <command> [args...]`
-//   unlock <pw> | list <pw> | create <pw> <title> <secret> |
-//   edit <pw> <entryId> <title> <secret> | save <pw> | delete <pw> <entryId> |
-//   pull <pw> | lock
+//   unlock <pw> | list <pw> | show <pw> <entryId> |
+//   create <pw> <title> <secret> | edit <pw> <entryId> <title> <secret> |
+//   save <pw> | delete <pw> <entryId> | pull <pw> | lock
 //
 import { createInterface } from 'node:readline';
 import { setupDashClient } from './setupDashClient.mjs';
@@ -163,6 +163,7 @@ async function oneShot(argv) {
     switch (cmd) {
       case 'unlock': { const pw = args[0]; const res = await cmdUnlock(session, pw); cmdList(session); break; }
       case 'list': { await session.unlock(args[0]); cmdList(session); break; }
+      case 'show': { await session.unlock(args[0]); await cmdShow(session, args[1]); break; }
       case 'create': { await session.unlock(args[0]); await cmdCreate(session, args[1], args[2]); break; }
       case 'edit': { await session.unlock(args[0]); await cmdEdit(session, args[1], args[2], args[3]); await cmdSave(session); break; }
       case 'save': { await session.unlock(args[0]); await cmdSave(session); break; }

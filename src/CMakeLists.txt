@@ -424,6 +424,11 @@ set_target_properties(${PROGNAME} PROPERTIES ENABLE_EXPORTS ON)
 add_executable(pyxpass_headless_test pyxpass/PyxPassHeadlessTest.cpp)
 target_link_libraries(pyxpass_headless_test PRIVATE keepassxc_core Qt6::Core Qt6::Network)
 
+# Pyxpass DashConnect login dialog render test (M10b/M11d) — needs Widgets for
+# QApplication/QDialog + grab(); renders offscreen, no display required.
+add_executable(pyxpass_dashconnect_dialog_test pyxpass/PyxPassDashConnectDialogTest.cpp)
+target_link_libraries(pyxpass_dashconnect_dialog_test PRIVATE keepassxc_gui keepassxc_core Qt6::Widgets Qt6::Network)
+
 if(WIN32)
     set_target_properties(${PROGNAME} PROPERTIES WIN32_EXECUTABLE ON)
     include(GenerateProductVersion)

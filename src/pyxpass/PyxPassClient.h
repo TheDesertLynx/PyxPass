@@ -102,7 +102,8 @@ namespace PyxPass
         bool dashconnectPoll(const QString& connectionId,
                              QString* status = nullptr,
                              QString* identityId = nullptr,
-                             QString* err = nullptr);
+                             QString* err = nullptr,
+                             qint64* remainingMs = nullptr);
         bool dashconnectComplete(const QString& connectionId,
                                  QString* identityId = nullptr,
                                  QString* err = nullptr);

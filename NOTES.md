@@ -119,3 +119,10 @@
   - e2e responder (decoded privkey bytes): zeroes chainKey + loginKey after publishing.
   - Tests: 46/46 dashconnect (was 44; +2 M11c zeroing assertions: internally-generated ephemeral priv is all-zero after use; caller-provided priv untouched).
   - Live sanity after restart: fresh init -> responder -> poll still returns 'revoked' (exercises the modified validateKeyRegistration + isLoginKeyRevoked), confirming no regression from zeroing.
+## MILESTONE 11 — M11d DONE (2026-10-02), M11 COMPLETE
+- M11d ✅ DONE (this commit): 5-min request expiry + countdown; QR kept private; deep-link hijack note.
+  - Expiry: sidecar REQUEST_TTL_MS=5min enforced server-side (poll returns 'expired'); poll already returned remainingMs.
+  - Countdown: GUI Client::dashconnectPoll now exposes remainingMs; DashConnectLoginDialog shows a smooth mm:ss countdown driven by a 1s timer, refreshed authoritatively each 3s poll. Stops on ready/revoked/expired/cancel. Verified live: poll returns remainingMs ~299734.
+  - QR kept private: the dash-key URI and QR exist only in sidecar + dialog memory; the sidecar logs NO URI/QR (only "listening on ..."), and the dialog never writes them to disk. Copy URI is an explicit user action (clipboard).
+  - DEEP-LINK HIJACK NOTE (threat model): the dash-key: URI is a custom-scheme deep link. A malicious app on the device could register the dash-key: scheme and intercept the URI to impersonate the wallet/responder, or a rogue QR reader could harvest it. Mitigations kept in this design: the URI is only ever shown inside the PyxPass dialog (never logged/persisted), the wallet must present the full identityId + DPNS for the user to confirm (M11a), and a revoked login key is refused (M11b). Users should only scan/copy the URI from the PyxPass dialog itself and verify the identity before approving.
+- M11 (security hardening) is now COMPLETE: M11a confirmation mitigations, M11b RevokedWalletKey refusal, M11c buffer zeroing, M11d expiry+countdown/QR-privacy/deep-link-note. All pushed to origin/develop.

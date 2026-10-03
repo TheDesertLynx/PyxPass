@@ -43,9 +43,11 @@ namespace PyxPass
         , m_qrWidget(new SquareSvgWidget(this))
         , m_uriEdit(new QLineEdit())
         , m_status(new QLabel())
+        , m_countdown(new QLabel())
         , m_copyButton(new QPushButton(tr("Copy URI")))
         , m_doneButton(new QPushButton(tr("Done")))
         , m_timer(new QTimer(this))
+        , m_countdownTimer(new QTimer(this))
     {
         setWindowTitle(tr("DashConnect Login"));
         setModal(false);
@@ -70,6 +72,12 @@ namespace PyxPass
 
         m_status->setWordWrap(true);
         root->addWidget(m_status);
+
+        // M11d: request-expiry countdown. The QR/URI are only valid briefly;
+        // show how much time is left before the request expires.
+        m_countdown->setAlignment(Qt::AlignCenter);
+        m_countdown->setStyleSheet(QStringLiteral("color: #777777;"));
+        root->addWidget(m_countdown);
 
         // Confirmation panel (M11a): shown after the wallet responds, before
         // the master password. Requires confirming the identity start/end.
@@ -100,6 +108,20 @@ namespace PyxPass
             m_confirmButton->setEnabled(!m_confirmEdit->text().isEmpty());
         });
         connect(m_timer, &QTimer::timeout, this, &DashConnectLoginDialog::poll);
+        // M11d: separate 1s timer drives a smooth countdown; authoritative
+        // remainingMs is refreshed on every poll.
+        m_countdownTimer->setInterval(1000);
+        connect(m_countdownTimer, &QTimer::timeout, this, [this]() {
+            if (m_remainingMs > 0) {
+                m_remainingMs -= 1000;
+            }
+            updateCountdown();
+            if (m_remainingMs <= 0) {
+                setStatus(tr("Request expired. Close this dialog and try again."), true);
+                m_timer->stop();
+                m_countdownTimer->stop();
+            }
+        });
         connect(this, &QDialog::rejected, this, &DashConnectLoginDialog::cancel);
 
         m_timer->setInterval(POLL_INTERVAL_MS);
@@ -110,6 +132,9 @@ namespace PyxPass
     {
         if (m_timer->isActive()) {
             m_timer->stop();
+        }
+        if (m_countdownTimer->isActive()) {
+            m_countdownTimer->stop();
         }
         delete m_client;
     }
@@ -133,7 +158,11 @@ namespace PyxPass
         }
 
         setStatus(tr("Waiting for your Dash wallet to respond\u2026"));
+        // M11d: show the full 5-minute countdown up front.
+        m_remainingMs = 5 * 60 * 1000;
+        updateCountdown();
         m_timer->start();
+        m_countdownTimer->start();
     }
 
     void DashConnectLoginDialog::poll()
@@ -150,16 +179,22 @@ namespace PyxPass
         QString status;
         QString identityId;
         QString err;
-        if (!m_client->dashconnectPoll(m_connectionId, &status, &identityId, &err)) {
+        qint64 remainingMs = 0;
+        if (!m_client->dashconnectPoll(m_connectionId, &status, &identityId, &err, &remainingMs)) {
             setStatus(tr("Poll error: %1").arg(err), true);
             m_timer->stop();
             return;
         }
 
+        // M11d: show the authoritative remaining lifetime (mm:ss) each tick.
+        m_remainingMs = remainingMs;
+        updateCountdown();
+
         if (status == QStringLiteral("ready")) {
             setStatus(tr("Wallet responded. Verify who you are logging in as."));
             m_ready = true;
             m_timer->stop();
+            m_countdownTimer->stop();
             m_identityId = identityId;
             showConfirmation(identityId);
         } else if (status == QStringLiteral("revoked")) {
@@ -168,12 +203,28 @@ namespace PyxPass
                          "Sign in with your master password instead."),
                       true);
             m_timer->stop();
+            m_countdownTimer->stop();
             m_doneButton->setEnabled(false);
         } else if (status == QStringLiteral("expired")) {
             setStatus(tr("Request expired. Close this dialog and try again."), true);
             m_timer->stop();
+            m_countdownTimer->stop();
+            m_countdown->setText(tr("Expired"));
         }
         // "pending": keep polling.
+    }
+
+    void DashConnectLoginDialog::updateCountdown()
+    {
+        if (m_ready || m_remainingMs <= 0) {
+            return;
+        }
+        const qint64 totalSeconds = qMax<qint64>(0, m_remainingMs / 1000);
+        const qint64 mm = totalSeconds / 60;
+        const qint64 ss = totalSeconds % 60;
+        m_countdown->setText(tr("Request expires in %1:%2")
+                                 .arg(mm, 2, 10, QLatin1Char('0'))
+                                 .arg(ss, 2, 10, QLatin1Char('0')));
     }
 
     void DashConnectLoginDialog::showConfirmation(const QString& identityId)
@@ -280,6 +331,9 @@ namespace PyxPass
     {
         if (m_timer->isActive()) {
             m_timer->stop();
+        }
+        if (m_countdownTimer->isActive()) {
+            m_countdownTimer->stop();
         }
     }
 

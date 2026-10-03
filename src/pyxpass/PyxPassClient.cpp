@@ -250,7 +250,8 @@ namespace PyxPass
     bool Client::dashconnectPoll(const QString& connectionId,
                                  QString* status,
                                  QString* identityId,
-                                 QString* err)
+                                 QString* err,
+                                 qint64* remainingMs)
     {
         m_lastError.clear();
         QJsonArray params;
@@ -267,6 +268,9 @@ namespace PyxPass
         }
         if (identityId) {
             *identityId = res.value(QStringLiteral("identityId")).toString();
+        }
+        if (remainingMs) {
+            *remainingMs = res.value(QStringLiteral("remainingMs")).toVariant().toLongLong();
         }
         return true;
     }

@@ -64,6 +64,7 @@ namespace PyxPass
         void setStatus(const QString& text, bool error = false);
         void showConfirmation(const QString& identityId);
         void showPasswordPrompt();
+        void updateCountdown();
 
         PyxPass::Client* m_client = nullptr;
         QString m_connectionId;
@@ -74,9 +75,12 @@ namespace PyxPass
         SquareSvgWidget* m_qrWidget = nullptr;
         QLineEdit* m_uriEdit = nullptr;
         QLabel* m_status = nullptr;
+        QLabel* m_countdown = nullptr; // M11d: request-expiry countdown (mm:ss)
         QPushButton* m_copyButton = nullptr;
         QPushButton* m_doneButton = nullptr;
         QTimer* m_timer = nullptr;
+        QTimer* m_countdownTimer = nullptr; // M11d: 1s countdown tick
+        qint64 m_remainingMs = 0;
 
         // Confirmation panel (M11a)
         QLabel* m_confirmLabel = nullptr;
